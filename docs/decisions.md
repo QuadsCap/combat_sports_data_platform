@@ -20,15 +20,23 @@
 - **2026-09-20** — **Platform is combat sports, not MMA-only.** The repo was always named `combat_sports_data_platform`; the docs had narrowed it. Titles and framing corrected across CLAUDE.md, README, project-definition and build-plan. Historical entries above left as written.
 - **2026-09-20** — Design consequence of the above, settled now because it is cheap now: `dim_event` carries `sport` + `promotion`, `fact_round` inherits them, fighter natural keys scoped by source/promotion rather than name. Constant values in v1. Round-level measures treated as sport-specific, not one flat MMA-shaped table.
 - **2026-09-20** — v1 **load** stays UFC/MMA only. Combat-sports naming and schema do not reopen the out-of-scope list; second sport/organisation ingest remains v2.
+- **2026-09-23** — Infra fact (not a new decision): Fabric work runs on the **Trial** capacity; F2 `emildp700fabric` is paused deliberately and stays paused. Project workspace goes on Trial license mode.
+- **2026-09-24** — Coverage: Kaggle `full_data_silver_plus` = 8,555 fights, 1994-03-11 (UFC 2) → 2026-05-16. **UFC 1 excluded** (Emil): different sport at the time, sample too small; the data doesn't include it anyway. Recency gap vs. today accepted for Phase 1 (historical holdout); closing it is the Phase 2 scrape.
+- **2026-09-24** — **Plan restructured: "v1/v2" retired, one timeline of Phases.** "v2" had no scope, gate or date and had become an unowned "later" bucket. Everything tagged v2 is now either inside a phase or on the Parked list below with a reconsider date. Historical entries above that say "v2" are left as written; read them via this mapping: scrape → Phase 2; late-arriving handling → Phase 2; CI/CD, second org/sport, RLS, monitoring → Parked.
+- **2026-09-24** — **CONFIRMED by Emil: the Kaggle → UFCStats scrape switch happens before the model.** New phase order: Phase 1 Platform on Kaggle (gate **Sat 17 Oct**, unchanged) → **Phase 2 Source switch** (Sprints 5–7, gate **Sun 8 Nov**) → **Phase 3 Model** (Sprints 8–10, published **Sun 29 Nov**) → Phase 4 products/monetization placeholder. Cost, stated plainly: model publish moves 8 Nov → 29 Nov. Earlier entries' "Phase 2 = model" and "Phase 3 = monetization" now read as Phase 3 and Phase 4. [The 8 Nov Phase 2 gate follows from 3 sprints after 17 Oct; Emil confirmed the order and the 29 Nov date.]
+- **2026-09-24** — **Source-swap readiness is Phase 1 scope** (Emil: the switch must be as easy as possible). Silver is the contract (`docs/silver-contract.md`, Sprint 2); one ingest + one cleaning notebook per source (`20_clean_fights` renamed `20_clean_kaggle`); source-specific column names only inside that source's cleaning notebook; nothing downstream of silver reads bronze; every silver row carries `source`; UFCStats IDs preferred as natural keys (Sprint 1 check); Kaggle is kept, not replaced.
+- **2026-09-24** — ufcstats.com robots/ToS check pulled forward from "before scraping" to Sprint 1, because Phase 2 now blocks the model. A "no" must surface before 17 Oct.
+- **2026-09-24** — Kaggle `ufc_features` (2,410 pre-computed columns) is not a model input: unknown as-of logic (leakage risk) and includes odds-derived `market_prob_*`. Kept in bronze as reference only. [Claude's recommendation — Emil did not object, not explicitly confirmed.]
 
 ## Parked (with reconsider dates)
 
-- Other organisations' data (ONE FC, PFL, Bellator) — **reconsider at Phase 2 completion.** Raised 2026-09-20.
-- Cross-source reliability reconciliation — Phase 1 ships the descriptive version only (record coverage claims, count disagreements). Anything further: **reconsider at v2.** Raised 2026-09-20.
-- Blog / long-form write-up of the analysis — the Phase 2 README is v1 of this. **Reconsider once Phase 2 ships.** Raised 2026-09-20.
-
-- Betting / bankroll / picks / model-access sales — **reconsider at Phase 2 completion** (see 2026-09-13 entry).
+- Betting / bankroll / picks / model-access sales — **reconsider at the Phase 3 gate (29 Nov)**, when the model has holdout numbers (see 2026-09-13 entry). This is the Phase 4 fork.
+- Other organisations' data (ONE FC, PFL, Bellator) and second sport — **reconsider at the Phase 3 gate (29 Nov).** Raised 2026-09-20.
+- Cross-source reconciliation beyond counting disagreements (Phase 2 counts them) — **reconsider at the Phase 3 gate (29 Nov).** Raised 2026-09-20.
+- RLS/masking demo; monitoring + one diagnosed pipeline failure — displaced from Phase 1 on 2026-09-20. **Reconsider at the Phase 3 gate (29 Nov).**
+- Full CI/CD buildout (deployment pipelines, multi-env) — **reconsider at the Phase 3 gate (29 Nov).**
+- Eventstream / real-time layer — **reconsider at the Phase 3 gate (29 Nov).** The Phase 2 scrape is batch.
+- Cross-check own rolling features vs. Kaggle `ufc_features` (3–5 features, disagreement count) — **reconsider at Sprint 8 start (9 Nov).** Raised 2026-09-23. [Claude's proposal — not yet confirmed by Emil.]
+- Blog / long-form write-up of the analysis — the Phase 3 README is the first version of this. **Reconsider once Phase 3 ships (29 Nov).** Raised 2026-09-20.
 - DP-700 retake booking — **reconsider when consultancy outreach returns** (target: ~2 weeks).
-- Eventstream / real-time layer — reconsider only if v1 ships before gate.
-- Full CI/CD buildout — reconsider at v2.
 - Warrior Channel — prior reconsider date 20 Nov stands, subordinate to this project.
