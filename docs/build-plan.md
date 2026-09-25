@@ -52,7 +52,7 @@ And by the Phase 2 gate:
 
 **Goal: raw data is in Fabric and you know what it actually contains.**
 
-- [ ] `10_ingest_kaggle` — land the raw files into the lakehouse as `bronze_*`. Raw and immutable:
+- [x] `10_ingest_kaggle` — land the raw files into the lakehouse as `bronze_*`. Raw and immutable:
       no cleaning, no renaming, no type casting. Add ingest timestamp + source filename columns.
 - [ ] **Coverage note** → `docs/data-coverage.md`: date range, fight count, round count, how many
       fights have per-round detail vs. only totals, how many have odds, null rates on the columns
