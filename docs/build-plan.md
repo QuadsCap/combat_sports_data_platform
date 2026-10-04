@@ -75,7 +75,7 @@ while you are still doing full loads.
 
 **Goal: clean, typed, deduplicated silver — to a written contract.**
 
-- [ ] `docs/silver-contract.md` — first, before code: `silv_fight`, `silv_round`, `silv_fighter`
+- [x] `docs/silver-contract.md` — first, before code: `silv_fight`, `silv_round`, `silv_fighter`
       with our column names, types, grain, natural keys, and a `source` column. One page.
 - [ ] `20_clean_kaggle` — types, dates parsed (`date` everywhere, not `timestamp`), weight classes
       normalised, method-of-victory standardised, obvious junk rows dropped **and counted**.
