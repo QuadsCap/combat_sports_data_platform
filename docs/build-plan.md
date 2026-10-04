@@ -54,14 +54,14 @@ And by the Phase 2 gate:
 
 - [x] `10_ingest_kaggle` — land the raw files into the lakehouse as `bronze_*`. Raw and immutable:
       no cleaning, no renaming, no type casting. Add ingest timestamp + source filename columns.
-- [ ] **Coverage note** → `docs/data-coverage.md`: date range, fight count, round count, how many
+- [x] **Coverage note** → `docs/data-coverage.md`: date range, fight count, round count, how many
       fights have per-round detail vs. only totals, how many have odds, null rates on the columns
       that matter. Plain numbers.
-- [ ] **Swap check:** does Kaggle carry UFCStats fight/fighter IDs or URLs? Yes/no in the coverage
+- [x] **Swap check:** does Kaggle carry UFCStats fight/fighter IDs or URLs? Yes/no in the coverage
       note — it decides how Phase 2 bridges fighter identity.
-- [ ] **ufcstats.com robots.txt/ToS** — 10 min. Blocking for Phase 2; if the answer is no, it
+- [x] **ufcstats.com robots.txt/ToS** — 10 min. Blocking for Phase 2; if the answer is no, it
       must surface now, not on 19 Oct.
-- [ ] Write down the first three things that look wrong. They will all matter later.
+- [x] Write down the first three things that look wrong. They will all matter later.
 
 **Done when:** `bronze_*` tables are queryable in Fabric, and `data-coverage.md` answers "can this
 dataset support a `fact_round` grain at all?" with a yes/no and the numbers behind it.
