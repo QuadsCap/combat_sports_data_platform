@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "11_profile_kaggle"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "79bd8ab7-bdd9-bb96-4ade-6d7ed4612ba3"
+  }
+}

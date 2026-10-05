@@ -86,6 +86,7 @@ print(len(spark.table(TABLE).columns))
 
 from pyspark.sql import functions as F
 
+
 LOAD_ID = "2026-09-24"
 LANDING = f"Files/kaggle_file_load/{LOAD_ID}"
 
@@ -119,6 +120,28 @@ for file_name, table in FILES.items():
     # Verify: check the table has the expected rows and columns
     t = spark.table(table)
     print(f"  rows: {t.count()}, columns: {len(t.columns)}")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+import re
+from collections import Counter
+
+df = spark.read.table("bronze_kaggle_full_data_silver_plus")
+
+# Strip corner prefix (f_1_ / f_2_) and round prefix (r1_ ... r5_)
+base = [re.sub(r"^r\d_", "", re.sub(r"^f_[12]_", "", c)) for c in df.columns]
+
+counts = Counter(base)
+print(f"{len(df.columns)} columns -> {len(counts)} distinct base names\n")
+for name, n in sorted(counts.items()):
+    print(f"{n:>3}  {name}")
 
 # METADATA ********************
 
