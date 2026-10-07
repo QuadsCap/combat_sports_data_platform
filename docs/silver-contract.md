@@ -27,14 +27,16 @@ Names below are **proposed silver names** (ours); the bronze source is in bracke
 | event_date | date | no | Convenience copy of `silv_event.event_date` (Emil, 2026-10-04) |
 | f1_fighter_id | string | no | Corner 1 → `silv_fighter.fighter_id`; parsed from `f_1_fighter_url` |
 | f2_fighter_id | string | no | Corner 2 → `silv_fighter.fighter_id`; parsed from `f_2_fighter_url` |
-| winner_fighter_id | string | yes | `f1_fighter_id` or `f2_fighter_id`: `winner` (a name) matched to `f_1_name` / `f_2_name` within the row. Null = draw / NC / no match (count it) |
+| outcome | string | no | `'win'` / `'draw'` / `'no_contest'` (Emil, 2026-10-06). Kaggle: `winner` matches a corner → win; `winner` = "No Contest" + Decision → draw; "No Contest" + Could Not Continue → no_contest |
+| winner_fighter_id | string | yes | `f1_fighter_id` or `f2_fighter_id`: `winner` (a name) matched to `f_1_name` / `f_2_name` within the row. Null only when `outcome` ≠ `'win'`; a win with no name match is a data error (count it) |
 | weight_class | string | no | [`weight_class`] normalised list (built in `20_clean_kaggle`) |
 | gender | string | no | [`gender`] `'M'` / `'F'` |
 | title_fight | boolean | no | [`title_fight`] |
 | scheduled_rounds | int | yes | [`num_rounds`] 3 / 5 / 1 / 2; `0` (31 fights) → null |
 | referee | string | yes | [`referee`] |
-| method | string | no | [`result`] trimmed + mapped: Decision, KO/TKO, Submission, DQ, … (list built in `20_clean_kaggle`) |
-| method_detail | string | yes | [`result_details`] |
+| method | string | no | [`result`] whitespace-collapsed + mapped: `Decision` / `KO/TKO` / `Submission` / `DQ` / `Could Not Continue` (Emil, 2026-10-06). "TKO - Doctor's Stoppage" → KO/TKO; "Decision - X" → Decision. Source does not split KO from TKO |
+| decision_type | string | yes | `'Unanimous'` / `'Split'` / `'Majority'`; null = not a decision. Set on draws too (e.g. majority draw). Kaggle: suffix of `result` if present, else `result_details` (Emil, 2026-10-06) |
+| method_detail | string | yes | [`result_details`] whitespace-collapsed, otherwise raw: finish technique + position, or judges' scorecards |
 | finish_round | int | no | [`finish_round`] last round fought |
 | finish_time_sec | int | no | [`finish_time`] `m:ss` → seconds into the finish round |
 | f1_ranking | int | yes | [`f_1_ranking`] ranking at this fight (changes per fight for 22.6 % of fighters); type/meaning of nulls to confirm in cleaning |
