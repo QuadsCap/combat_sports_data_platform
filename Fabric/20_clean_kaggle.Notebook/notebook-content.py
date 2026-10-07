@@ -590,3 +590,419 @@ print(spark.read.table("silver_layer.dbo.silv_event").count(), "/", spark.read.t
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+# silv_round: f_N_rR_<stat> (wide, 5 rounds x 2 corners) -> one row per fight x round.
+# Self-contained: reads bronze itself, so it can run without the rename cell.
+# Kaggle round-stat suffix -> contract name (docs/silver-contract.md, silv_round).
+# Not carried: sig_strikes / sig_pct* / td_2 (percentages = derivable -> gold).
+
+from pyspark.sql import functions as F
+
+df_round = (
+    spark.read.table("bronze_layer.dbo.bronze_kaggle_full_data_silver_plus")
+    .withColumn("fight_id", F.regexp_extract("fight_url", r"/fight-details/([0-9a-f]+)$", 1))
+)
+
+ROUND_STATS = {
+    "knockdowns":         "knockdowns",
+    "sig_strikes_att":    "sig_strikes_att",
+    "sig_strikes_succ":   "sig_strikes_succ",
+    "total_strikes_att":  "total_strikes_att",
+    "total_strikes_succ": "total_strikes_succ",
+    "td_1_att":           "td_att",
+    "td_1_succ":          "td_succ",
+    "submission_att":     "submission_att",
+    "reversals":          "reversals",
+    "ctrl":               "ctrl_sec",
+    "head_att":           "head_att",
+    "head_succ":          "head_succ",
+    "body_att":           "body_att",
+    "body_succ":          "body_succ",
+    "leg_att":            "leg_att",
+    "leg_succ":           "leg_succ",
+    "distance_att":       "distance_att",
+    "distance_succ":      "distance_succ",
+    "clinch_att":         "clinch_att",
+    "clinch_succ":        "clinch_succ",
+    "ground_att":         "ground_att",
+    "ground_succ":        "ground_succ",
+}
+
+dtypes = dict(df_round.dtypes)
+print("ctrl type in bronze:", dtypes["f_1_r1_ctrl"])
+
+def to_int(c, stat):
+    # ctrl may be stored as "m:ss" text; everything else is a count
+    if stat == "ctrl" and dtypes[c] == "string":
+        parts = F.split(F.col(c), ":")
+        return parts.getItem(0).cast("int") * 60 + parts.getItem(1).cast("int")
+    return F.col(c).cast("int")
+
+def one_round(r):
+    cols = [F.col("fight_id"), F.lit(r).alias("round")]
+    for n in (1, 2):
+        cols += [to_int(f"f_{n}_r{r}_{k}", k).alias(f"f{n}_{v}") for k, v in ROUND_STATS.items()]
+    return df_round.select(cols)
+
+# Stack round 1..5 on top of each other = the unpivot
+rounds = one_round(1)
+for r in range(2, 6):
+    rounds = rounds.unionByName(one_round(r))
+
+STAT_COLS = [c for c in rounds.columns if c.startswith(("f1_", "f2_"))]
+
+# Keep only rounds that were fought (round <= finish_round); flag rounds with no stats
+rounds = rounds.join(df_round.select("fight_id", F.col("finish_round").cast("int").alias("finish_round")), "fight_id")
+any_stat = F.coalesce(*[F.col(c) for c in STAT_COLS])
+
+print("stats beyond finish_round:", rounds.filter((F.col("round") > F.col("finish_round")) & any_stat.isNotNull()).count(), "(expect 0; else we'd drop real data)")
+
+silv_round = (
+    rounds
+    .filter(F.col("round") <= F.col("finish_round"))
+    .withColumn("stats_missing", any_stat.isNull())
+    .select("fight_id", F.col("round").cast("int").alias("round"), "stats_missing", *STAT_COLS, F.lit("kaggle").alias("source"))
+)
+
+# --- Checks ---
+expected = df_round.agg(F.sum(F.col("finish_round").cast("int"))).first()[0]
+print("silv_round rows:", silv_round.count(), "| expected (sum of finish_round):", expected)
+print("cols:", len(silv_round.columns), "(expect 48)")
+print("duplicate fight_id+round:", silv_round.count() - silv_round.select("fight_id", "round").distinct().count(), "(expect 0)")
+print("fights with stats_missing, by round:")
+silv_round.filter("stats_missing").groupBy("round").agg(F.countDistinct("fight_id").alias("fights")).orderBy("round").show()
+silv_round.limit(3).show(truncate=False)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+from pyspark.sql import functions as F
+
+bronze = spark.read.table("bronze_layer.dbo.bronze_kaggle_full_data_silver_plus")
+
+(bronze
+    .filter(
+        F.col("f_1_r1_sig_strikes_att").isNull()                                          # no R1 stats (21)
+        | ((F.col("finish_round") >= 2) & F.col("f_1_r2_sig_strikes_att").isNull())       # R2 fought but no stats (2)
+    )
+    .select("fight_url", "event_date", "event_name", "f_1_name", "f_2_name", "result", "finish_round")
+    .orderBy("event_date")
+    .show(30, truncate=False))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+silv_round.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("silver_layer.dbo.silv_round")
+print(spark.read.table("silver_layer.dbo.silv_round").count(), "rounds written")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# silv_fighter, step 1 + 2: stack both corners, then find attributes that disagree per fighter.
+# Uses fighter_f1 / fighter_f2 from the rename cell (our names only).
+# We are "unpivoting" the figher rows here, so they can be put into silv_figther.
+
+from pyspark.sql import functions as F
+
+df_fighter = spark.read.table("bronze_layer.dbo.bronze_kaggle_full_data_silver_plus")
+
+# Kaggle suffix -> contract name, identical for both corners
+FIGHTER_ATTRS = {
+    "name":               "full_name",
+    "fighter_f_name":     "first_name",
+    "fighter_l_name":     "last_name",
+    "fighter_nickname":   "nickname",
+    "fighter_dob":        "dob",
+    "fighter_height_cm":  "height_cm",
+    "fighter_reach_cm":   "reach_cm",
+    "fighter_stance":     "stance",
+    "fighter_weight_lbs": "weight_lbs",
+}
+
+def corner(n):
+    cols = [F.regexp_extract(f"f_{n}_fighter_url", r"/fighter-details/([0-9a-f]+)$", 1).alias("fighter_id")]
+    cols += [F.col(f"f_{n}_{k}").alias(v) for k, v in FIGHTER_ATTRS.items()]
+    return df_fighter.select(cols)
+
+fighters = corner(1).unionByName(corner(2))
+
+print("stacked rows:", fighters.count(), "(expect 17110 = 8555 x 2)")
+print("distinct fighters:", fighters.select("fighter_id").distinct().count())
+
+ATTRS = [c for c in fighters.columns if c != "fighter_id"]
+
+# Per fighter and attribute: more than one distinct value, or a mix of null and a value
+agg = fighters.groupBy("fighter_id").agg(
+    *[F.countDistinct(c).alias(f"{c}__n") for c in ATTRS],
+    *[F.max(F.col(c).isNull().cast("int")).alias(f"{c}__has_null") for c in ATTRS],
+)
+
+print("\nattribute         | fighters w/ >1 value | fighters w/ null + value")
+for c in ATTRS:
+    multi = agg.filter(F.col(f"{c}__n") > 1).count()
+    mixed = agg.filter((F.col(f"{c}__n") >= 1) & (F.col(f"{c}__has_null") == 1)).count()
+    print(f"{c:<18}| {multi:>20} | {mixed:>24}")
+    print(f"{c:<18}| {multi:>20} | {mixed:>24}")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+conflict_ids = agg.filter(F.col("full_name__n") > 1).select("fighter_id")
+(fighters.join(conflict_ids, "fighter_id")
+         .groupBy("fighter_id", "full_name", "first_name", "last_name", "nickname").count()
+         .orderBy("fighter_id").show(truncate=False))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Check whether full_name can be rebuilt as first_name + last_name for every fighter:
+# counts fighters with a missing first/last name, and fighters whose rebuilt name differs from full_name.
+
+built = F.concat_ws(" ", "first_name", "last_name")
+print("first/last null:", fighters.filter(F.col("first_name").isNull() | F.col("last_name").isNull()).select("fighter_id").distinct().count())
+print("fighters where first+last != full_name:", fighters.filter(built != F.col("full_name")).select("fighter_id").distinct().count())
+fighters.filter(built != F.col("full_name")).select("full_name", "first_name", "last_name").distinct().show(30, truncate=False)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Check Tyrell Fortune's profile in bronze: are his first/last/dob/height/reach actually Regina Malpica's?
+# Shows both fighters side by side, from whichever corner they fought in.
+
+from pyspark.sql import functions as F
+
+bronze = spark.read.table("bronze_layer.dbo.bronze_kaggle_full_data_silver_plus")
+
+def corner(n):
+    return bronze.select(
+        F.col(f"f_{n}_fighter_url").alias("fighter_url"),
+        F.col("event_date"),
+        F.col(f"f_{n}_name").alias("name"),
+        F.col(f"f_{n}_fighter_f_name").alias("first_name"),
+        F.col(f"f_{n}_fighter_l_name").alias("last_name"),
+        F.col(f"f_{n}_fighter_dob").alias("dob"),
+        F.col(f"f_{n}_fighter_height_cm").alias("height_cm"),
+        F.col(f"f_{n}_fighter_reach_cm").alias("reach_cm"),
+        F.col(f"f_{n}_fighter_weight_lbs").alias("weight_lbs"),
+        F.col("weight_class"),
+        F.col("gender"),
+    )
+
+(corner(1).unionByName(corner(2))
+    .filter(F.col("name").isin("Tyrell Fortune", "Regina Malpica") | (F.col("last_name") == "Malpica"))
+    .orderBy("name", "event_date")
+    .show(truncate=False))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# silv_fighter: one row per fighter (docs/silver-contract.md). Self-contained: reads bronze itself.
+# Both corners stacked, then one row per fighter_id. Profile attributes are identical across a
+# fighter's rows (checked 2026-10-07); full_name varies for 6 fighters -> name from the most recent fight.
+
+from pyspark.sql import functions as F
+from pyspark.sql.window import Window
+
+df_fighter = spark.read.table("bronze_layer.dbo.bronze_kaggle_full_data_silver_plus")
+
+FIGHTER_ATTRS = {
+    "name":               "full_name",
+    "fighter_f_name":     "first_name",
+    "fighter_l_name":     "last_name",
+    "fighter_nickname":   "nickname",
+    "fighter_dob":        "dob",
+    "fighter_height_cm":  "height_cm",
+    "fighter_reach_cm":   "reach_cm",
+    "fighter_stance":     "stance",
+    "fighter_weight_lbs": "weight_lbs",
+}
+
+def corner(n):
+    cols = [F.regexp_extract(f"f_{n}_fighter_url", r"/fighter-details/([0-9a-f]+)$", 1).alias("fighter_id"),
+            F.to_date("event_date").alias("event_date")]
+    cols += [F.col(f"f_{n}_{k}").alias(v) for k, v in FIGHTER_ATTRS.items()]
+    return df_fighter.select(cols)
+
+fighters = corner(1).unionByName(corner(2))
+
+# Text "NULL" / "" -> real null in string columns
+for c, t in fighters.dtypes:
+    if t == "string":
+        fighters = fighters.withColumn(c, F.when(F.trim(F.col(c)).isin("", "NULL"), None).otherwise(F.trim(F.col(c))))
+
+# One row per fighter: the row from their most recent fight
+latest = Window.partitionBy("fighter_id").orderBy(F.desc("event_date"))
+
+silv_fighter = (
+    fighters
+    .withColumn("rn", F.row_number().over(latest))
+    .filter(F.col("rn") == 1)
+    .select(
+        "fighter_id",
+        "full_name",
+        "first_name",
+        "last_name",
+        "nickname",
+        F.to_date("dob").alias("dob"),
+        F.col("height_cm").cast("double"),
+        F.col("reach_cm").cast("double"),
+        "stance",
+        F.col("weight_lbs").cast("double"),
+        F.lit("kaggle").alias("source"),
+    )
+)
+
+# Manual profile fix, verified on ufcstats.com (Emil, 2026-10-07).
+# Source carried Regina Malpica's profile on Tyrell Fortune's fighter_id.
+FIGHTER_FIX = {
+    "bc7f4b2d4c2724a2": {
+        "first_name": "Tyrell",
+        "last_name":  "Fortune",
+        "nickname": None,
+        "dob":        "1990-07-04",
+        "height_cm":  190.5,    # 6'3"
+        "reach_cm":   190.5,    # 75"
+        "stance":     "Orthodox",
+        "weight_lbs": 259.0,
+    },
+}
+
+for fid, fixes in FIGHTER_FIX.items():
+    for col, val in fixes.items():
+        v = F.to_date(F.lit(val)) if col == "dob" else F.lit(val)
+        silv_fighter = silv_fighter.withColumn(
+            col, F.when(F.col("fighter_id") == fid, v).otherwise(F.col(col)))
+
+# --- Checks ---
+print("stacked rows:", fighters.count(), "(expect 17110)")
+print("silv_fighter rows:", silv_fighter.count(), "(expect 2686)")
+print("fighter_id unique:", silv_fighter.select("fighter_id").distinct().count(), "(expect 2686)")
+print("full_name null:", silv_fighter.filter(F.col("full_name").isNull()).count(), "(expect 0)")
+print("dob cast lost values:", fighters.filter(F.col("dob").isNotNull()).select("fighter_id").distinct().count()
+      - silv_fighter.filter(F.col("dob").isNotNull()).count(), "(expect 0)")
+
+# The 6 name-conflict fighters + Tyrell Fortune (fixed)
+(silv_fighter.filter(F.col("fighter_id").isin("01c9e4013afce141", "23dec7c47cb418f8", "60193e707634e560",
+                                               "98a58c26c5b1ed17", "eee0ef3e2b14816b", "fc08099550072fe4",
+                                               "bc7f4b2d4c2724a2"))
+     .show(truncate=False))
+
+# --- Write ---
+silv_fighter.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("silver_layer.dbo.silv_fighter")
+print(spark.read.table("silver_layer.dbo.silv_fighter").count(), "fighters written")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Silver sign-off checks: referential integrity + sanity. Reads silver only. Every line should be 0.
+# A range of checks.
+from pyspark.sql import functions as F
+
+ev = spark.read.table("silver_layer.dbo.silv_event")
+fi = spark.read.table("silver_layer.dbo.silv_fight")
+ro = spark.read.table("silver_layer.dbo.silv_round")
+fr = spark.read.table("silver_layer.dbo.silv_fighter")
+
+# 1. Referential integrity (left_anti = rows with no match on the other side)
+print("fight.event_id not in event:     ", fi.join(ev, "event_id", "left_anti").count())
+print("fight.f1_fighter_id not in fighter:", fi.join(fr, fi.f1_fighter_id == fr.fighter_id, "left_anti").count())
+print("fight.f2_fighter_id not in fighter:", fi.join(fr, fi.f2_fighter_id == fr.fighter_id, "left_anti").count())
+print("round.fight_id not in fight:     ", ro.join(fi, "fight_id", "left_anti").count())
+print("fight without any round:         ", fi.join(ro, "fight_id", "left_anti").count())
+
+# 3. Round stats: succ <= att, sig <= total, no negatives
+pairs = ["sig_strikes", "total_strikes", "td", "head", "body", "leg", "distance", "clinch", "ground"]
+bad_succ = " OR ".join(f"f{n}_{p}_succ > f{n}_{p}_att" for n in (1, 2) for p in pairs)
+print("succ > att (rounds):             ", ro.filter(bad_succ).count())
+print("sig > total strikes (rounds):    ", ro.filter("f1_sig_strikes_att > f1_total_strikes_att OR f2_sig_strikes_att > f2_total_strikes_att").count())
+stat_cols = [c for c in ro.columns if c.startswith(("f1_", "f2_"))]
+print("negative stat (rounds):          ", ro.filter(" OR ".join(f"{c} < 0" for c in stat_cols)).count())
+
+# 4. Finish round within scheduled rounds
+print("finish_round > scheduled_rounds: ", fi.filter("finish_round > scheduled_rounds").count())
+
+# 5. Odds must be decimal (> 1)
+odds = ["f1_odds_decimal", "f2_odds_decimal", "f1_ko_odds", "f2_ko_odds", "f1_sub_odds", "f2_sub_odds",
+        "f1_bfo_best_decimal", "f2_bfo_best_decimal"]
+print("odds <= 1:                       ", fi.filter(" OR ".join(f"{c} <= 1" for c in odds)).count())
+fi.groupBy("odds_source").agg(F.count("*").alias("fights"), F.count("f1_odds_decimal").alias("with_legacy_odds"),
+                              F.count("f1_bfo_best_decimal").alias("with_bfo_odds")).show()
+
+# 6. Age at fight between 18 and 50
+ages = (fi.select("event_date", F.col("f1_fighter_id").alias("fighter_id"))
+          .unionByName(fi.select("event_date", F.col("f2_fighter_id").alias("fighter_id")))
+          .join(fr, "fighter_id")
+          .withColumn("age", F.floor(F.months_between("event_date", "dob") / 12)))
+print("age < 18 or > 50 at fight:       ", ages.filter("age < 18 OR age > 50").count())
+ages.filter("age < 18 OR age > 50").select("full_name", "dob", "event_date", "age").distinct().orderBy("age").show(truncate=False)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# finish_round > scheduled_rounds: which fights, and when?
+(fi.filter("finish_round > scheduled_rounds")
+   .select("event_date", "fight_id", "scheduled_rounds", "finish_round", "finish_time_sec", "method", "decision_type")
+   .orderBy("event_date").show(30, truncate=False))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
