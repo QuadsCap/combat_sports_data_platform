@@ -77,12 +77,12 @@ while you are still doing full loads.
 
 - [x] `docs/silver-contract.md` — first, before code: `silv_fight`, `silv_round`, `silv_fighter`
       with our column names, types, grain, natural keys, and a `source` column. One page.
-- [ ] `20_clean_kaggle` — types, dates parsed (`date` everywhere, not `timestamp`), weight classes
+- [x] `20_clean_kaggle` — types, dates parsed (`date` everywhere, not `timestamp`), weight classes
       normalised, method-of-victory standardised, obvious junk rows dropped **and counted**.
       Kaggle column names appear only in this notebook.
-- [ ] Rounds stored wide (`r1_…r5_`)? Unpivot to one row per fight per round.
-- [ ] Dedup: identify the natural key for a fight and for a round. Count what dedup removes.
-- [ ] Reconcile row counts bronze → silver. Every dropped row explained by a number.
+- [x] Rounds stored wide (`r1_…r5_`)? Unpivot to one row per fight per round.
+- [x] Dedup: identify the natural key for a fight and for a round. Count what dedup removes.
+- [x] Reconcile row counts bronze → silver. Every dropped row explained by a number.
 
 **Done when:** `silv_fight` and `silv_round` exist, match the contract, and you can state
 bronze→silver row counts with a one-line reason for each delta.
