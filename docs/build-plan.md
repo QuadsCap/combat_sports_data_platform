@@ -93,12 +93,12 @@ bronze→silver row counts with a one-line reason for each delta.
 
 **Goal: fighters resolve to one identity, and the dimensions exist.**
 
-- [ ] Entity resolution: UFCStats ID if available → exact match → normalised match → fuzzy match
+- [x] Entity resolution: UFCStats ID if available → exact match → normalised match → fuzzy match  *(ID only — every Kaggle fighter has a UFCStats ID; fuzzy moved to Phase 2, decisions.md 2026-10-07)*
       → manual override map. Deterministic first, always. `src/` holds the helpers.
-- [ ] **Keep the failure log.** Every name the fuzzy pass got wrong, and what caught it. Per
+- [x] **Keep the failure log.** Every name the fuzzy pass got wrong, and what caught it. Per  *(n/a in Phase 1 — no fuzzy pass; see above)*
       CLAUDE.md this is the portfolio differentiator, not an appendix.
-- [ ] `dim_fighter` as SCD2 — valid_from / valid_to / is_current.
-- [ ] `dim_event`, `dim_date`.
+- [x] `dim_fighter` as SCD2 — valid_from / valid_to / is_current.  *(built as SCD1 — decisions.md 2026-10-07)*
+- [x] `dim_event`, `dim_date`.
 
 **Done when:** a fighter with known name variants resolves to one `fighter_key`, and one fighter
 shows two SCD2 rows with correct validity windows.
@@ -111,7 +111,7 @@ shows two SCD2 rows with correct validity windows.
 
 **Goal: end-to-end. A human opens a report and learns something.**
 
-- [ ] `30_warehouse_fact_round` — the fact table, keys wired to the dimensions. Reads silver only.
+- [x] `30_warehouse_fact_round` — the fact table, keys wired to the dimensions. Reads silver only.
 - [ ] `40_model_baseline` — win/loss record, age, age gap, layoff, weight class, reach/height
       differential. Logistic regression, no tuning. Record accuracy and log loss. **This is the
       number the Phase 3 model has to beat.**
