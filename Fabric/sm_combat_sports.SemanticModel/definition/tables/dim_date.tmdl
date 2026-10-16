@@ -1,0 +1,117 @@
+table dim_date
+	lineageTag: b3a8751c-7bea-4fda-b44b-3171ba8ad8f0
+	sourceLineageTag: [dbo].[dim_date]
+
+	column date_key
+		dataType: int64
+		formatString: 0
+		lineageTag: e2d88155-ffb0-44c9-aaab-2cd2dc6b1779
+		sourceLineageTag: date_key
+		summarizeBy: none
+		sourceColumn: date_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 812e2a3b-049a-4aa6-9931-bfc48066b333
+		sourceLineageTag: date
+		summarizeBy: none
+		sourceColumn: date
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column year
+		dataType: int64
+		formatString: 0
+		lineageTag: 16122af7-2ee5-4ef8-9402-23fd7cf3180f
+		sourceLineageTag: year
+		summarizeBy: none
+		sourceColumn: year
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column quarter
+		dataType: int64
+		formatString: 0
+		lineageTag: 6d0233ab-0ce7-4de3-9f4c-e7dd6cbee3bf
+		sourceLineageTag: quarter
+		summarizeBy: none
+		sourceColumn: quarter
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column month
+		dataType: int64
+		formatString: 0
+		lineageTag: d748ae13-154e-43ad-add3-5a7cb529c04f
+		sourceLineageTag: month
+		summarizeBy: none
+		sourceColumn: month
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column month_name
+		dataType: string
+		lineageTag: a9a184e5-ff5b-40b6-bbee-d1c941e2d885
+		sourceLineageTag: month_name
+		summarizeBy: none
+		sourceColumn: month_name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column day_of_month
+		dataType: int64
+		formatString: 0
+		lineageTag: a89309ab-8ad3-4bc1-b7f0-c454bef7b315
+		sourceLineageTag: day_of_month
+		summarizeBy: none
+		sourceColumn: day_of_month
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column day_of_week
+		dataType: int64
+		formatString: 0
+		lineageTag: 8b18fd92-58f2-4889-b4f6-72f5a09001e4
+		sourceLineageTag: day_of_week
+		summarizeBy: none
+		sourceColumn: day_of_week
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column day_name
+		dataType: string
+		lineageTag: cb50ba11-c815-4820-a3fc-1dcf0a9a16a4
+		sourceLineageTag: day_name
+		summarizeBy: none
+		sourceColumn: day_name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_date = entity
+		mode: directLake
+		source
+			entityName: dim_date
+			schemaName: dbo
+			expressionSource: 'DirectLake - gold_layer'
+

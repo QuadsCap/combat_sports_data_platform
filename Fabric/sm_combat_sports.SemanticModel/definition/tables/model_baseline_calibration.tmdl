@@ -1,0 +1,75 @@
+table model_baseline_calibration
+	lineageTag: 5cd91cfa-2f64-46ab-8b86-aed4d3c6cb7c
+	sourceLineageTag: [dbo].[model_baseline_calibration]
+
+	column bin
+		dataType: int64
+		formatString: 0
+		lineageTag: 63c3566d-754c-4028-8e37-29393cd56a95
+		sourceLineageTag: bin
+		summarizeBy: sum
+		sourceColumn: bin
+
+		annotation SummarizationSetBy = Automatic
+
+	column mean_predicted
+		dataType: double
+		lineageTag: 983f7941-bcb6-4bd3-bf92-6c47e17ed54f
+		sourceLineageTag: mean_predicted
+		summarizeBy: sum
+		sourceColumn: mean_predicted
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column actual_win_rate
+		dataType: double
+		lineageTag: c0740630-c6cf-44db-bd94-930936e8d443
+		sourceLineageTag: actual_win_rate
+		summarizeBy: sum
+		sourceColumn: actual_win_rate
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column fights
+		dataType: int64
+		formatString: 0
+		lineageTag: f9a840dc-8963-45f3-91e6-d0d498c557da
+		sourceLineageTag: fights
+		summarizeBy: sum
+		sourceColumn: fights
+
+		annotation SummarizationSetBy = Automatic
+
+	column bin_lower
+		dataType: double
+		lineageTag: ef35fb37-7d6c-47cc-a162-bd30dda1e783
+		sourceLineageTag: bin_lower
+		summarizeBy: sum
+		sourceColumn: bin_lower
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column bin_upper
+		dataType: double
+		lineageTag: 1dec3222-8b2a-4948-a1b0-25ae33c1d480
+		sourceLineageTag: bin_upper
+		summarizeBy: sum
+		sourceColumn: bin_upper
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition model_baseline_calibration = entity
+		mode: directLake
+		source
+			entityName: model_baseline_calibration
+			schemaName: dbo
+			expressionSource: 'DirectLake - gold_layer'
+

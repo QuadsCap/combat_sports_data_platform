@@ -1,0 +1,289 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "1be08b8f751f2dba1f99",
+  "position": {
+    "x": 422,
+    "y": 430,
+    "z": 3000,
+    "height": 383,
+    "width": 510,
+    "tabOrder": 3000
+  },
+  "visual": {
+    "visualType": "scatterChart",
+    "query": {
+      "queryState": {
+        "Category": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "model_baseline_calibration"
+                    }
+                  },
+                  "Property": "bin"
+                }
+              },
+              "queryRef": "model_baseline_calibration.bin",
+              "nativeQueryRef": "bin",
+              "active": true
+            }
+          ]
+        },
+        "Size": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "model_baseline_calibration"
+                        }
+                      },
+                      "Property": "fights"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(model_baseline_calibration.fights)",
+              "nativeQueryRef": "Sum of fights"
+            }
+          ]
+        },
+        "X": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "model_baseline_calibration"
+                        }
+                      },
+                      "Property": "mean_predicted"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(model_baseline_calibration.mean_predicted)",
+              "nativeQueryRef": "Sum of mean_predicted",
+              "active": true
+            }
+          ]
+        },
+        "Y": {
+          "projections": [
+            {
+              "field": {
+                "Aggregation": {
+                  "Expression": {
+                    "Column": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "model_baseline_calibration"
+                        }
+                      },
+                      "Property": "actual_win_rate"
+                    }
+                  },
+                  "Function": 0
+                }
+              },
+              "queryRef": "Sum(model_baseline_calibration.actual_win_rate)",
+              "nativeQueryRef": "Sum of actual_win_rate"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "plotAreaShading": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "displayName": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Symmetry shading 1'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "ratioLine": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "displayName": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Ratio line 1'"
+                }
+              }
+            },
+            "transparency": {
+              "expr": {
+                "Literal": {
+                  "Value": "58D"
+                }
+              }
+            },
+            "style": {
+              "expr": {
+                "Literal": {
+                  "Value": "'dotted'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'“Calibration: predicted vs actual (test, 2023–2026)”'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "subTitle": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'dot = probability bin · size = fights · on the diagonal = well calibrated · bins under 30 fights are noise'"
+                }
+              }
+            },
+            "heading": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Heading6'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
+                }
+              }
+            },
+            "titleWrap": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "5ea8acf805ced6766623",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "model_baseline_calibration"
+                  }
+                },
+                "Property": "mean_predicted"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "715f861f2654009628ef",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "model_baseline_calibration"
+                  }
+                },
+                "Property": "actual_win_rate"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "2c9e21730539dcab758b",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "model_baseline_calibration"
+              }
+            },
+            "Property": "bin"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "0a3772641f287b8fa597",
+        "field": {
+          "Aggregation": {
+            "Expression": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "model_baseline_calibration"
+                  }
+                },
+                "Property": "fights"
+              }
+            },
+            "Function": 0
+          }
+        },
+        "type": "Advanced"
+      }
+    ]
+  }
+}

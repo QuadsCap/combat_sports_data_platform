@@ -1,0 +1,410 @@
+table dim_fight
+	lineageTag: eb03fe73-942b-439d-b139-e9c30bf24dd2
+	sourceLineageTag: [dbo].[dim_fight]
+
+	measure Finish_Rate =
+			
+			DIVIDE (
+			    CALCULATE ( DISTINCTCOUNT ( fact_round[fight_key] ), dim_fight[method] IN { "KO/TKO", "Submission" } ),
+			    DISTINCTCOUNT ( fact_round[fight_key] )
+			)
+		formatString: 0%;-0%;0%
+		lineageTag: 06f75c21-6004-4efa-8e65-44295b59f189
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		changedProperty = IsHidden
+
+	measure Fights =
+			
+			COUNTROWS ( dim_fight )
+		formatString: 0
+		lineageTag: 8f3cfa5d-32e0-4e40-bb52-641214891794
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+	measure Finishes =
+			
+			CALCULATE (
+			    [Fights],
+			    dim_fight[method] IN { "KO/TKO", "Submission" }
+			)
+		formatString: 0
+		lineageTag: 6c0324f9-117e-4cf7-bcad-d91a0f9f46bd
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+	column fight_key
+		dataType: string
+		lineageTag: 04d9e888-7c72-41cd-84f5-60408f2fc679
+		sourceLineageTag: fight_key
+		summarizeBy: none
+		sourceColumn: fight_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column f1_fighter_key
+		dataType: int64
+		formatString: 0
+		lineageTag: a6dae3db-fb8a-4a58-9e93-0ce1b46fd7cf
+		sourceLineageTag: f1_fighter_key
+		summarizeBy: sum
+		sourceColumn: f1_fighter_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column f2_fighter_key
+		dataType: int64
+		formatString: 0
+		lineageTag: 54b72c85-65c1-4abb-b396-4186de2b1128
+		sourceLineageTag: f2_fighter_key
+		summarizeBy: sum
+		sourceColumn: f2_fighter_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column winner_fighter_key
+		dataType: int64
+		formatString: 0
+		lineageTag: 0a57c089-00bb-413c-a6cc-3ccbbd05a1a6
+		sourceLineageTag: winner_fighter_key
+		summarizeBy: sum
+		sourceColumn: winner_fighter_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column outcome
+		dataType: string
+		lineageTag: 12050e7d-03f9-4b88-914e-97667a43fbdb
+		sourceLineageTag: outcome
+		summarizeBy: none
+		sourceColumn: outcome
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column method
+		dataType: string
+		lineageTag: 9834b028-8028-469f-992e-9bc6ba2a2682
+		sourceLineageTag: method
+		summarizeBy: none
+		sourceColumn: method
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column decision_type
+		dataType: string
+		lineageTag: 2a88bf02-b75f-41fd-9290-a1474128baf8
+		sourceLineageTag: decision_type
+		summarizeBy: none
+		sourceColumn: decision_type
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column method_detail
+		dataType: string
+		lineageTag: 4e742a3e-23f5-4888-9409-5596ac3f1603
+		sourceLineageTag: method_detail
+		summarizeBy: none
+		sourceColumn: method_detail
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column weight_class
+		dataType: string
+		lineageTag: 76a5b21e-a859-4ab8-aed1-e94a98fb9c9c
+		sourceLineageTag: weight_class
+		summarizeBy: none
+		sourceColumn: weight_class
+		sortByColumn: weight_class_sort
+
+		changedProperty = SortByColumn
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column gender
+		dataType: string
+		lineageTag: d7ee9d2b-cad1-44b4-9d34-7dcaaec4d4ff
+		sourceLineageTag: gender
+		summarizeBy: none
+		sourceColumn: gender
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column title_fight
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 99208bde-8a21-421d-a791-ce7883e14563
+		sourceLineageTag: title_fight
+		summarizeBy: none
+		sourceColumn: title_fight
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column scheduled_rounds
+		dataType: int64
+		formatString: 0
+		lineageTag: 98ee1fc0-0a62-4b95-9bf4-b67c8d6ec6f7
+		sourceLineageTag: scheduled_rounds
+		summarizeBy: sum
+		sourceColumn: scheduled_rounds
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column finish_round
+		dataType: int64
+		formatString: 0
+		lineageTag: aa416641-2e8e-4102-bbdb-5ea536b090a7
+		sourceLineageTag: finish_round
+		summarizeBy: sum
+		sourceColumn: finish_round
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column finish_time_sec
+		dataType: int64
+		formatString: 0
+		lineageTag: 73135927-4f86-406a-ba73-2bf59be01f37
+		sourceLineageTag: finish_time_sec
+		summarizeBy: sum
+		sourceColumn: finish_time_sec
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column referee
+		dataType: string
+		lineageTag: 83750c8f-a486-4374-9353-d7dbb2003cab
+		sourceLineageTag: referee
+		summarizeBy: none
+		sourceColumn: referee
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column f1_ranking
+		dataType: int64
+		formatString: 0
+		lineageTag: 23529ba4-1b85-42b7-95ce-ad4b33f5503a
+		sourceLineageTag: f1_ranking
+		summarizeBy: sum
+		sourceColumn: f1_ranking
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column f2_ranking
+		dataType: int64
+		formatString: 0
+		lineageTag: 8e34e7f5-e8fa-4f40-92f6-15a234f6b04f
+		sourceLineageTag: f2_ranking
+		summarizeBy: sum
+		sourceColumn: f2_ranking
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column odds_source
+		dataType: string
+		lineageTag: 455f57ac-4b8e-47e4-9600-8683b6363827
+		sourceLineageTag: odds_source
+		summarizeBy: none
+		sourceColumn: odds_source
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column f1_odds_decimal
+		dataType: double
+		lineageTag: 4f66d339-8e2c-4316-a01d-9d58e59d1ac8
+		sourceLineageTag: f1_odds_decimal
+		summarizeBy: sum
+		sourceColumn: f1_odds_decimal
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column f2_odds_decimal
+		dataType: double
+		lineageTag: 0a32c626-85f9-4389-9600-864baaffe95c
+		sourceLineageTag: f2_odds_decimal
+		summarizeBy: sum
+		sourceColumn: f2_odds_decimal
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column f1_bfo_best_decimal
+		dataType: double
+		lineageTag: 9aa4e5c8-61c5-4fdd-9b7e-8e3badf90bd1
+		sourceLineageTag: f1_bfo_best_decimal
+		summarizeBy: sum
+		sourceColumn: f1_bfo_best_decimal
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column f2_bfo_best_decimal
+		dataType: double
+		lineageTag: 0b53a4aa-0685-4392-af97-704a28535bc8
+		sourceLineageTag: f2_bfo_best_decimal
+		summarizeBy: sum
+		sourceColumn: f2_bfo_best_decimal
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column bfo_bookmaker_count
+		dataType: int64
+		formatString: 0
+		lineageTag: daa76ee4-b6d3-4c37-a403-d4a7c5c6c292
+		sourceLineageTag: bfo_bookmaker_count
+		summarizeBy: sum
+		sourceColumn: bfo_bookmaker_count
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column f1_ko_odds
+		dataType: double
+		lineageTag: 6facfb19-9517-4fd1-a2c1-9158db594647
+		sourceLineageTag: f1_ko_odds
+		summarizeBy: sum
+		sourceColumn: f1_ko_odds
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column f2_ko_odds
+		dataType: double
+		lineageTag: f92e34c6-86f5-4a12-a84e-32c8f94ef62d
+		sourceLineageTag: f2_ko_odds
+		summarizeBy: sum
+		sourceColumn: f2_ko_odds
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column f1_sub_odds
+		dataType: double
+		lineageTag: 78575f6d-0c6a-4d0e-be63-15cb26a55557
+		sourceLineageTag: f1_sub_odds
+		summarizeBy: sum
+		sourceColumn: f1_sub_odds
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column f2_sub_odds
+		dataType: double
+		lineageTag: 7c70d244-edf4-456a-8a65-6a3fbaaad953
+		sourceLineageTag: f2_sub_odds
+		summarizeBy: sum
+		sourceColumn: f2_sub_odds
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column source
+		dataType: string
+		lineageTag: ba5e8958-e1b9-4958-88f4-e6608452f5a8
+		sourceLineageTag: source
+		summarizeBy: none
+		sourceColumn: source
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column weight_class_sort
+		dataType: int64
+		formatString: 0
+		lineageTag: ee109bfc-62fd-439e-85de-ba13a9f517e9
+		sourceLineageTag: weight_class_sort
+		summarizeBy: sum
+		sourceColumn: weight_class_sort
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column weight_limit_lbs
+		dataType: int64
+		formatString: 0
+		lineageTag: f0614f26-a2b7-4adb-ae63-35fac2e6ca25
+		sourceLineageTag: weight_limit_lbs
+		summarizeBy: sum
+		sourceColumn: weight_limit_lbs
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_fight = entity
+		mode: directLake
+		source
+			entityName: dim_fight
+			schemaName: dbo
+			expressionSource: 'DirectLake - gold_layer'
+

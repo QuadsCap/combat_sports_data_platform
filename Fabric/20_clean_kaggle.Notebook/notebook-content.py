@@ -412,7 +412,7 @@ fight = (
         F.when(wc.isNull() | wc.isin("NULL", "Nieznana"), "Unknown") 
          .when(wc.contains("Tournament"), "Open Weight")
          .when(wc == "Catch Weight", "Catchweight")
-         .otherwise(F.trim(F.regexp_replace(wc, r"^UFC |Interim |Women's | Title$", ""))))
+         .otherwise(F.trim(F.regexp_replace(wc, r"^UFC |Interim | Title$", ""))))
 )
 
 fight.groupBy("weight_class").count().orderBy(F.desc("count")).show(30, truncate=False)
@@ -428,6 +428,36 @@ print("same fighter both corners:", fight.filter(F.col("f1_fighter_id") == F.col
 print("null finish_round:",         fight.filter(F.col("finish_round").isNull()).count(), "(expect 0)")
 print("duplicate fight_id:",        fight.count() - fight.select("fight_id").distinct().count(), "(expect 0)")
 print("decision at 0:00:",          fight.filter((F.col("method") == "Decision") & (F.col("finish_time_sec") == 0)).count(), "(expect 1, kept)")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Manual weight-class fixes, verified on ufcstats.com (Emil, 2026-10-07).
+# Source had no class ("NULL" / "Nieznana"); keyed on fight_id.
+WEIGHT_CLASS_FIX = {
+    "6ca94b35719eb300": "Open Weight",   # Severn vs Beneteau, UFC 5, 1995-04-07
+    "d62aec55bc142346": "Open Weight",   # Shamrock vs Severn, UFC 6, 1995-07-14
+    "66c029f49d3c5da6": "Open Weight",   # Taktarov vs Abbott, UFC 6, 1995-07-14
+    "e7ca291dd8f5661b": "Open Weight",   # Ruas vs Varelans, UFC 7, 1995-09-08
+    "524b49a676498c6d": "Open Weight",   # Severn vs Taktarov, Ultimate Ultimate '95
+    "16b4a0b06427f1ac": "Open Weight",   # Shamrock vs Leopoldo, UFC 8, 1996-02-16
+    "8d2e99599124a16f": "Open Weight",   # Frye vs Goodridge, UFC 8, 1996-02-16
+    "6a060498e60756af": "Open Weight",   # Severn vs Shamrock, UFC 9, 1996-05-17
+    "6397fba14ce7f674": "Open Weight",   # Coleman vs Frye, UFC 10, 1996-07-12
+    "d595d2c36ddba8ee": "Open Weight",   # Frye vs Abbott, Ultimate Ultimate '96
+    "36ec204f47e4d613": "Catchweight",   # Musayev vs Orolbai, 2025-06-21 (165 lb)
+}
+
+fix_map = F.create_map([F.lit(x) for pair in WEIGHT_CLASS_FIX.items() for x in pair])
+fight = fight.withColumn("weight_class", F.coalesce(fix_map[F.col("fight_id")], F.col("weight_class")))
+
+print("fixes matched:", fight.filter(F.col("fight_id").isin(list(WEIGHT_CLASS_FIX))).count(), "(expect 11)")
 
 # METADATA ********************
 
@@ -549,26 +579,11 @@ from pyspark.sql import functions as F
 
 # CELL ********************
 
-# Manual weight-class fixes, verified on ufcstats.com (Emil, 2026-10-07).
-# Source had no class ("NULL" / "Nieznana"); keyed on fight_id.
-WEIGHT_CLASS_FIX = {
-    "6ca94b35719eb300": "Open Weight",   # Severn vs Beneteau, UFC 5, 1995-04-07
-    "d62aec55bc142346": "Open Weight",   # Shamrock vs Severn, UFC 6, 1995-07-14
-    "66c029f49d3c5da6": "Open Weight",   # Taktarov vs Abbott, UFC 6, 1995-07-14
-    "e7ca291dd8f5661b": "Open Weight",   # Ruas vs Varelans, UFC 7, 1995-09-08
-    "524b49a676498c6d": "Open Weight",   # Severn vs Taktarov, Ultimate Ultimate '95
-    "16b4a0b06427f1ac": "Open Weight",   # Shamrock vs Leopoldo, UFC 8, 1996-02-16
-    "8d2e99599124a16f": "Open Weight",   # Frye vs Goodridge, UFC 8, 1996-02-16
-    "6a060498e60756af": "Open Weight",   # Severn vs Shamrock, UFC 9, 1996-05-17
-    "6397fba14ce7f674": "Open Weight",   # Coleman vs Frye, UFC 10, 1996-07-12
-    "d595d2c36ddba8ee": "Open Weight",   # Frye vs Abbott, Ultimate Ultimate '96
-    "36ec204f47e4d613": "Catchweight",   # Musayev vs Orolbai, 2025-06-21 (165 lb)
-}
+silv_fight.groupBy("gender", "weight_class").count().orderBy("gender", "weight_class").show(30, truncate=False)
 
-fix_map = F.create_map([F.lit(x) for pair in WEIGHT_CLASS_FIX.items() for x in pair])
-fight = fight.withColumn("weight_class", F.coalesce(fix_map[F.col("fight_id")], F.col("weight_class")))
-
-print("fixes matched:", fight.filter(F.col("fight_id").isin(list(WEIGHT_CLASS_FIX))).count(), "(expect 11)")
+print("Unknown:", silv_fight.filter(F.col("weight_class") == "Unknown").count(), "(expect 0)")
+print("F without Women's:", silv_fight.filter((F.col("gender") == "F") & ~F.col("weight_class").startswith("Women's")).count(), "(expect 0)")
+print("M with Women's:", silv_fight.filter((F.col("gender") == "M") & F.col("weight_class").startswith("Women's")).count(), "(expect 0)")
 
 # METADATA ********************
 
@@ -583,6 +598,17 @@ silv_event.write.format("delta").mode("overwrite").option("overwriteSchema", "tr
 silv_fight.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("silver_layer.dbo.silv_fight")
 
 print(spark.read.table("silver_layer.dbo.silv_event").count(), "/", spark.read.table("silver_layer.dbo.silv_fight").count())
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+spark.read.table("silver_layer.dbo.silv_fight").groupBy("gender", "weight_class").count().orderBy("gender", "weight_class").show(30, truncate=False)
 
 # METADATA ********************
 

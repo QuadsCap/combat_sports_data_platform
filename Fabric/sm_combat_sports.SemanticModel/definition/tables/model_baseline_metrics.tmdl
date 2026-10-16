@@ -1,0 +1,184 @@
+table model_baseline_metrics
+	lineageTag: 0b85a7e9-2752-4e5e-94be-3bf71b3382d4
+	sourceLineageTag: [dbo].[model_baseline_metrics]
+
+	measure 'Test Accuracy' =
+			
+			CALCULATE ( MAX ( model_baseline_metrics[accuracy] ), model_baseline_metrics[split] = "test" )
+		formatString: 0.000
+		lineageTag: 33022f9f-4572-43ca-a5c6-5be320cb65e2
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		changedProperty = IsHidden
+
+	measure 'Test Log Loss' =
+			
+			CALCULATE ( MAX ( model_baseline_metrics[log_loss] ), model_baseline_metrics[split] = "test" )
+		formatString: 0.000
+		lineageTag: 65bf69e1-075d-49ac-b5c0-c12d050531fb
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		changedProperty = IsHidden
+
+	measure 'Test Brier' =
+			
+			CALCULATE ( MAX ( model_baseline_metrics[brier] ), model_baseline_metrics[split] = "test" )
+		formatString: 0.000
+		lineageTag: dd0f319b-21c5-46e8-b8cc-5f7fcf67f962
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		changedProperty = IsHidden
+
+	measure 'Test Naive Log Loss' =
+			
+			CALCULATE ( MAX ( model_baseline_metrics[naive_log_loss] ), model_baseline_metrics[split] = "test" )
+		formatString: 0.000
+		lineageTag: 5859a81e-b0de-4c02-bfc9-5e6f34454791
+
+		changedProperty = Name
+
+		changedProperty = FormatString
+
+		changedProperty = IsHidden
+
+	measure 'Test Fights' =
+			
+			CALCULATE ( MAX ( model_baseline_metrics[fights] ), model_baseline_metrics[split] = "test" )
+		formatString: 0
+		lineageTag: d76241e9-d069-4f7b-9d16-1b0b48fecdeb
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+	measure 'Sub Accuracy' =
+			
+			"naive 0.500 · n " & FORMAT ( [Test Fights], "#,0" )
+		lineageTag: 7586d1c3-b27e-4bd9-8672-e3dda592fc36
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+	measure 'Sub Log Loss' =
+			
+			"naive " & FORMAT ( [Test Naive Log Loss], "0.000" ) & " · lower is better"
+		lineageTag: 85c67f6f-d6db-4e74-baf0-1e0428df34b6
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+	measure 'Sub Brier' =
+			
+			"naive 0.250 · lower is better"
+		lineageTag: dcb0bc2c-588f-49fe-ac33-338ad575b7ec
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+	column split
+		dataType: string
+		lineageTag: c1a77bc5-6e57-428c-92fe-00a14375b336
+		sourceLineageTag: split
+		summarizeBy: none
+		sourceColumn: split
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column fights
+		dataType: int64
+		formatString: 0
+		lineageTag: c7af503a-ce7b-497a-b1b5-ee9be88c1f42
+		sourceLineageTag: fights
+		summarizeBy: sum
+		sourceColumn: fights
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column a_win_share
+		dataType: double
+		lineageTag: 348fde7a-07d4-4982-b258-a56c4e0e61f2
+		sourceLineageTag: a_win_share
+		summarizeBy: sum
+		sourceColumn: a_win_share
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column accuracy
+		dataType: double
+		lineageTag: 18b94916-e5cb-42f7-b334-965802e2471f
+		sourceLineageTag: accuracy
+		summarizeBy: sum
+		sourceColumn: accuracy
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column log_loss
+		dataType: double
+		lineageTag: 71e85b8e-fd12-4d50-98da-5cd3efeb32d5
+		sourceLineageTag: log_loss
+		summarizeBy: sum
+		sourceColumn: log_loss
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column brier
+		dataType: double
+		lineageTag: 3e0da1a7-e71c-46ad-9f3e-6fb2102795cd
+		sourceLineageTag: brier
+		summarizeBy: sum
+		sourceColumn: brier
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column naive_log_loss
+		dataType: double
+		lineageTag: b8680641-49f3-4cd4-b458-0b114904bb43
+		sourceLineageTag: naive_log_loss
+		summarizeBy: sum
+		sourceColumn: naive_log_loss
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	partition model_baseline_metrics = entity
+		mode: directLake
+		source
+			entityName: model_baseline_metrics
+			schemaName: dbo
+			expressionSource: 'DirectLake - gold_layer'
+

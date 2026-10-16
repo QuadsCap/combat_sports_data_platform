@@ -1,0 +1,439 @@
+table fact_round
+	lineageTag: 59918f11-c5e4-4be5-8c8a-a1fb4c389bea
+	sourceLineageTag: [dbo].[fact_round]
+
+	measure Fighter_Fights =
+			
+			VAR lo = SELECTEDVALUE ( age_band[min_age], 0 )
+			VAR hi = SELECTEDVALUE ( age_band[max_age], 99 )
+			RETURN
+			    CALCULATE (
+			        COUNTROWS ( SUMMARIZE ( fact_round, fact_round[fight_key], fact_round[fighter_key] ) ),
+			        fact_round[age_at_fight] >= lo,
+			        fact_round[age_at_fight] <= hi,
+			        NOT ISBLANK ( fact_round[age_at_fight] ),
+			        NOT ISBLANK ( dim_fight[winner_fighter_key] )
+			    )
+		formatString: 0
+		lineageTag: 4dfaae4a-9069-4678-b5f2-56472ec7c43c
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+	measure Wins =
+			
+			CALCULATE ( [Fighter_Fights], fact_round[won] = 1 )
+		formatString: 0
+		lineageTag: 7b27248b-6591-4c44-b469-645f4a05a04a
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+	measure Win_Rate =
+			
+			VAR n = [Fighter_Fights]
+			RETURN
+			    IF ( n >= 30, DIVIDE ( [Wins], n ) )
+		lineageTag: ec22c318-8ce1-43c1-9651-5ef82fbe226a
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure Win_Rate_Label =
+			
+			VAR n = [Fighter_Fights]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        n = 0 || ISBLANK ( n ), BLANK (),
+			        n < 30, "n < 30",
+			        FORMAT ( [Win_Rate], "0%" ) & " · n " & n
+			    )
+		lineageTag: 3bed6ae3-ad87-49c0-b240-f259958fada0
+
+		changedProperty = Name
+
+		changedProperty = IsHidden
+
+	column fight_key
+		dataType: string
+		lineageTag: 74380940-ba44-4262-9196-db3ef9b53508
+		sourceLineageTag: fight_key
+		summarizeBy: none
+		sourceColumn: fight_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column round
+		dataType: int64
+		formatString: 0
+		lineageTag: 409c4acc-4168-4856-bd95-72d23aa3f675
+		sourceLineageTag: round
+		summarizeBy: sum
+		sourceColumn: round
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column fighter_key
+		dataType: int64
+		formatString: 0
+		lineageTag: e41450e8-21e7-40af-a3c6-6288fbd79320
+		sourceLineageTag: fighter_key
+		summarizeBy: none
+		sourceColumn: fighter_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column opponent_key
+		dataType: int64
+		formatString: 0
+		lineageTag: 4bd90cb3-9fbf-4879-acd1-d48c70991b64
+		sourceLineageTag: opponent_key
+		summarizeBy: sum
+		sourceColumn: opponent_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column event_key
+		dataType: string
+		lineageTag: d143a83c-54d7-43ac-b995-5ed52e5d22aa
+		sourceLineageTag: event_key
+		summarizeBy: none
+		sourceColumn: event_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_key
+		dataType: int64
+		formatString: 0
+		lineageTag: b01d1186-465c-48c7-8e54-36dd5eb91751
+		sourceLineageTag: date_key
+		summarizeBy: none
+		sourceColumn: date_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column age_at_fight
+		dataType: int64
+		formatString: 0
+		lineageTag: a64b6758-1268-43c3-802c-1ccb50fe5929
+		sourceLineageTag: age_at_fight
+		summarizeBy: sum
+		sourceColumn: age_at_fight
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column won
+		dataType: int64
+		formatString: 0
+		lineageTag: 9cbf4aca-0d15-4460-b35a-11146c75e3f6
+		sourceLineageTag: won
+		summarizeBy: sum
+		sourceColumn: won
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column stats_missing
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: dbf08a9a-3285-4e9a-9829-6cc3670b0dca
+		sourceLineageTag: stats_missing
+		summarizeBy: none
+		sourceColumn: stats_missing
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column knockdowns
+		dataType: int64
+		formatString: 0
+		lineageTag: 41fa39ca-6137-41c9-bafe-46af6eccf68d
+		sourceLineageTag: knockdowns
+		summarizeBy: sum
+		sourceColumn: knockdowns
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column sig_strikes_att
+		dataType: int64
+		formatString: 0
+		lineageTag: eb930286-bda4-44cf-9f33-c0efd9b00baa
+		sourceLineageTag: sig_strikes_att
+		summarizeBy: sum
+		sourceColumn: sig_strikes_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column sig_strikes_succ
+		dataType: int64
+		formatString: 0
+		lineageTag: 96e052c9-71c2-4ae6-8483-d717a6fd6216
+		sourceLineageTag: sig_strikes_succ
+		summarizeBy: sum
+		sourceColumn: sig_strikes_succ
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column total_strikes_att
+		dataType: int64
+		formatString: 0
+		lineageTag: 21c4c6b6-7a07-473a-ad3b-6f7cde115e84
+		sourceLineageTag: total_strikes_att
+		summarizeBy: sum
+		sourceColumn: total_strikes_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column total_strikes_succ
+		dataType: int64
+		formatString: 0
+		lineageTag: 12636d59-1d40-4ac2-a44e-39f301e8e7a1
+		sourceLineageTag: total_strikes_succ
+		summarizeBy: sum
+		sourceColumn: total_strikes_succ
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column td_att
+		dataType: int64
+		formatString: 0
+		lineageTag: 03738c25-a141-43a9-b50a-aacf46f6dd84
+		sourceLineageTag: td_att
+		summarizeBy: sum
+		sourceColumn: td_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column td_succ
+		dataType: int64
+		formatString: 0
+		lineageTag: c8ac62ee-f5ba-4430-808f-6fe805c4d3d7
+		sourceLineageTag: td_succ
+		summarizeBy: sum
+		sourceColumn: td_succ
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column submission_att
+		dataType: int64
+		formatString: 0
+		lineageTag: fada7b73-036a-4734-a6da-49a9f0fdbcb3
+		sourceLineageTag: submission_att
+		summarizeBy: sum
+		sourceColumn: submission_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column reversals
+		dataType: int64
+		formatString: 0
+		lineageTag: 974cb8e6-7299-40ef-8d13-b321bac7f3bd
+		sourceLineageTag: reversals
+		summarizeBy: sum
+		sourceColumn: reversals
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column ctrl_sec
+		dataType: int64
+		formatString: 0
+		lineageTag: c5c7d88c-cb3f-4e9f-a313-75ba1e329daa
+		sourceLineageTag: ctrl_sec
+		summarizeBy: sum
+		sourceColumn: ctrl_sec
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column head_att
+		dataType: int64
+		formatString: 0
+		lineageTag: bcfb2a62-4b6d-4e19-be1e-b1c1bee9b323
+		sourceLineageTag: head_att
+		summarizeBy: sum
+		sourceColumn: head_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column head_succ
+		dataType: int64
+		formatString: 0
+		lineageTag: e285056c-bdd9-4d5c-ad00-7aa97626e0c1
+		sourceLineageTag: head_succ
+		summarizeBy: sum
+		sourceColumn: head_succ
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column body_att
+		dataType: int64
+		formatString: 0
+		lineageTag: d8b3f13e-97a2-42b1-892c-032cd712963b
+		sourceLineageTag: body_att
+		summarizeBy: sum
+		sourceColumn: body_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column body_succ
+		dataType: int64
+		formatString: 0
+		lineageTag: 71aab5a2-7698-49f9-b7a1-2051641ca2a0
+		sourceLineageTag: body_succ
+		summarizeBy: sum
+		sourceColumn: body_succ
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column leg_att
+		dataType: int64
+		formatString: 0
+		lineageTag: f5d9128c-3a31-4a85-b963-1bc83eee43f2
+		sourceLineageTag: leg_att
+		summarizeBy: sum
+		sourceColumn: leg_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column leg_succ
+		dataType: int64
+		formatString: 0
+		lineageTag: 7374d8bc-5d2e-4543-8a64-d75e88b31f80
+		sourceLineageTag: leg_succ
+		summarizeBy: sum
+		sourceColumn: leg_succ
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column distance_att
+		dataType: int64
+		formatString: 0
+		lineageTag: 7b38338f-0354-48d1-8630-04067d831206
+		sourceLineageTag: distance_att
+		summarizeBy: sum
+		sourceColumn: distance_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column distance_succ
+		dataType: int64
+		formatString: 0
+		lineageTag: d160c3e7-2fe8-4ef3-a5ca-3b642f9e8706
+		sourceLineageTag: distance_succ
+		summarizeBy: sum
+		sourceColumn: distance_succ
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column clinch_att
+		dataType: int64
+		formatString: 0
+		lineageTag: 67ca84c6-1358-4739-ad4b-e9baf72199af
+		sourceLineageTag: clinch_att
+		summarizeBy: sum
+		sourceColumn: clinch_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column clinch_succ
+		dataType: int64
+		formatString: 0
+		lineageTag: ef6375bf-8f96-4934-b13c-70bc602087e5
+		sourceLineageTag: clinch_succ
+		summarizeBy: sum
+		sourceColumn: clinch_succ
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column ground_att
+		dataType: int64
+		formatString: 0
+		lineageTag: 60ab612e-d6e3-4066-bff8-9394fdf2771f
+		sourceLineageTag: ground_att
+		summarizeBy: sum
+		sourceColumn: ground_att
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column ground_succ
+		dataType: int64
+		formatString: 0
+		lineageTag: 59a8de00-8d21-4c1e-904f-ac4d0417a455
+		sourceLineageTag: ground_succ
+		summarizeBy: sum
+		sourceColumn: ground_succ
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fact_round = entity
+		mode: directLake
+		source
+			entityName: fact_round
+			schemaName: dbo
+			expressionSource: 'DirectLake - gold_layer'
+

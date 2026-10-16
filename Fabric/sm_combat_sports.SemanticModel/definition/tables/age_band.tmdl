@@ -1,0 +1,56 @@
+table age_band
+	lineageTag: 1c3f2589-6789-4468-96c0-75b1c958bf97
+
+	column band
+		lineageTag: 0ee3075b-0044-4961-8dda-7d4bccf2ef64
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [band]
+		sortByColumn: sort
+
+		annotation SummarizationSetBy = Automatic
+
+	column min_age
+		formatString: 0
+		lineageTag: 61acd1c9-3064-426f-b384-646e74abd53e
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [min_age]
+
+		annotation SummarizationSetBy = Automatic
+
+	column max_age
+		formatString: 0
+		lineageTag: eb514710-3b98-4254-b966-f3e782d6b3db
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [max_age]
+
+		annotation SummarizationSetBy = Automatic
+
+	column sort
+		formatString: 0
+		lineageTag: 5304334a-a47f-4c70-b13c-4e7e5b4c9a8b
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [sort]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition age_band = calculated
+		mode: import
+		source =
+				
+				DATATABLE (
+				    "band", STRING, "min_age", INTEGER, "max_age", INTEGER, "sort", INTEGER,
+				    {
+				        { "≤24",   0, 24, 1 },
+				        { "25–29", 25, 29, 2 },
+				        { "30–34", 30, 34, 3 },
+				        { "35–39", 35, 39, 4 },
+				        { "40+",   40, 99, 5 }
+				    }
+				)
+
+	annotation PBI_Id = beec52293460422ba635e01bfb871574
+

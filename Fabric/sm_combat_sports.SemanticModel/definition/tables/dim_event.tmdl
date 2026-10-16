@@ -1,0 +1,134 @@
+table dim_event
+	lineageTag: 7518778f-4b06-4476-9d37-76e31392207d
+	sourceLineageTag: [dbo].[dim_event]
+
+	column event_key
+		dataType: string
+		lineageTag: c0f53b34-4ddb-4b03-95ac-d414f33e8191
+		sourceLineageTag: event_key
+		summarizeBy: none
+		sourceColumn: event_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column event_name
+		dataType: string
+		lineageTag: 118964a6-65ab-4af3-b82e-6bbf5aed290b
+		sourceLineageTag: event_name
+		summarizeBy: none
+		sourceColumn: event_name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column event_date
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: f2b1877e-6edc-426f-a395-87696bce663d
+		sourceLineageTag: event_date
+		summarizeBy: none
+		sourceColumn: event_date
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column date_key
+		dataType: int64
+		formatString: 0
+		lineageTag: 27d3eaf5-9953-4dc5-a1f9-a02383cad022
+		sourceLineageTag: date_key
+		summarizeBy: none
+		sourceColumn: date_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column event_city
+		dataType: string
+		lineageTag: 0752eeba-7f16-4b31-9638-af6f6e5d4b82
+		sourceLineageTag: event_city
+		summarizeBy: none
+		sourceColumn: event_city
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column event_state
+		dataType: string
+		lineageTag: 24e3351a-cd07-4838-aef0-6918204041b7
+		sourceLineageTag: event_state
+		summarizeBy: none
+		sourceColumn: event_state
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column event_country
+		dataType: string
+		lineageTag: a492f285-4905-4e70-b9ba-1103fc8bfa42
+		sourceLineageTag: event_country
+		summarizeBy: none
+		sourceColumn: event_country
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column sport
+		dataType: string
+		lineageTag: cb5c81b1-51a7-4699-b2e2-c169f0f23875
+		sourceLineageTag: sport
+		summarizeBy: none
+		sourceColumn: sport
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column promotion
+		dataType: string
+		lineageTag: a782e139-5568-4f20-9170-267d130ea9f0
+		sourceLineageTag: promotion
+		summarizeBy: none
+		sourceColumn: promotion
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column source
+		dataType: string
+		lineageTag: 54207400-0ee0-4481-8288-ddaf0119fe56
+		sourceLineageTag: source
+		summarizeBy: none
+		sourceColumn: source
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column era
+		dataType: string
+		lineageTag: 372b2b16-8c42-4121-ab50-815085cab806
+		sourceLineageTag: era
+		summarizeBy: none
+		sourceColumn: era
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_event = entity
+		mode: directLake
+		source
+			entityName: dim_event
+			schemaName: dbo
+			expressionSource: 'DirectLake - gold_layer'
+

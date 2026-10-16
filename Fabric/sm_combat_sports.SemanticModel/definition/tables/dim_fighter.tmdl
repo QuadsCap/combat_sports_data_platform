@@ -1,0 +1,162 @@
+table dim_fighter
+	lineageTag: 6d126e11-64a9-4bcf-b200-6e59eb950b4a
+	sourceLineageTag: [dbo].[dim_fighter]
+
+	column fighter_key
+		dataType: int64
+		formatString: 0
+		lineageTag: 778c3ef7-e981-4141-ad08-dcb2992a17aa
+		sourceLineageTag: fighter_key
+		summarizeBy: none
+		sourceColumn: fighter_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column fighter_id
+		dataType: string
+		lineageTag: e1a7a2cd-e483-4b1e-9b2a-adc52168a22a
+		sourceLineageTag: fighter_id
+		summarizeBy: none
+		sourceColumn: fighter_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column full_name
+		dataType: string
+		lineageTag: 78e38cd0-dab1-48fc-b799-5234819fbc4b
+		sourceLineageTag: full_name
+		summarizeBy: none
+		sourceColumn: full_name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column display_name
+		dataType: string
+		lineageTag: 26ca8f31-2137-4ee9-8298-5284efd4c946
+		sourceLineageTag: display_name
+		summarizeBy: none
+		sourceColumn: display_name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column first_name
+		dataType: string
+		lineageTag: 024ccb3a-684f-48ff-84b6-f502730d08f9
+		sourceLineageTag: first_name
+		summarizeBy: none
+		sourceColumn: first_name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column last_name
+		dataType: string
+		lineageTag: eefe2175-d723-4055-9053-a5eba5e76eb2
+		sourceLineageTag: last_name
+		summarizeBy: none
+		sourceColumn: last_name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column nickname
+		dataType: string
+		lineageTag: 9380cc34-7884-4901-8e6f-904d8126add6
+		sourceLineageTag: nickname
+		summarizeBy: none
+		sourceColumn: nickname
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column dob
+		dataType: dateTime
+		formatString: General Date
+		lineageTag: 7dafabd4-e364-43ac-bbb9-ed1686570c97
+		sourceLineageTag: dob
+		summarizeBy: none
+		sourceColumn: dob
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column height_cm
+		dataType: double
+		lineageTag: 7e20a38c-b310-4080-b435-24355a127ac6
+		sourceLineageTag: height_cm
+		summarizeBy: none
+		sourceColumn: height_cm
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column reach_cm
+		dataType: double
+		lineageTag: f94ce6b3-91a8-48e6-aca0-425d9a127d87
+		sourceLineageTag: reach_cm
+		summarizeBy: none
+		sourceColumn: reach_cm
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column stance
+		dataType: string
+		lineageTag: b8637d4f-4bd9-4285-9c4d-695d0867877d
+		sourceLineageTag: stance
+		summarizeBy: none
+		sourceColumn: stance
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column weight_lbs
+		dataType: double
+		lineageTag: 956126dc-3698-48e5-81ac-9e43f86ab82b
+		sourceLineageTag: weight_lbs
+		summarizeBy: none
+		sourceColumn: weight_lbs
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column source
+		dataType: string
+		lineageTag: adefa2fc-2c5e-497c-8e7b-94f99d39afee
+		sourceLineageTag: source
+		summarizeBy: none
+		sourceColumn: source
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dim_fighter = entity
+		mode: directLake
+		source
+			entityName: dim_fighter
+			schemaName: dbo
+			expressionSource: 'DirectLake - gold_layer'
+

@@ -90,15 +90,24 @@ print(spark.read.table("gold_layer.dbo.dim_date").count(), "rows written")
 
 # CELL ********************
 
-# dim_event: one row per event (gold star schema, decisions.md 2026-10-08 / 2026-10-10).
-# event_key = UFCStats event_id. Reads silver + gold dim_date only.
-
 # Why this exists: the "where and what" of each fight: event name, location, sport, promotion.
 # fact_round points here via event_key, so every round can be filtered by event, country or
 # promotion. event_key is the UFCStats event_id from silver (no new key, just renamed);
 # date_key links the event to dim_date.
 
 from pyspark.sql import functions as F
+
+# era: splits the data into periods so they can be analysed separately or filtered out.
+# Name -> first day of the era; each era runs until the next one starts.
+# To add an era, add a line. Order does not matter; the code sorts by date.
+ERAS = {
+    "pre_unified": "1993-01-01",   # 1994–2000: few rules, tournaments, open weight, long/no rounds
+    "unified":     "2000-11-17",   # UFC 28: first event under the unified rules (baseline uses this era)
+}
+
+era_col = F.lit(None)
+for name, start in sorted(ERAS.items(), key=lambda kv: kv[1]):
+    era_col = F.when(F.col("event_date") >= start, name).otherwise(era_col)
 
 silv_event = spark.read.table("silver_layer.dbo.silv_event")
 
@@ -113,6 +122,7 @@ dim_event = silv_event.select(
     "sport",
     "promotion",
     "source",
+    era_col.alias("era"),
 )
 
 # --- Checks ---
@@ -121,6 +131,8 @@ print("rows:", dim_event.count(), "(expect 774)")
 print("event_key unique:", dim_event.select("event_key").distinct().count(), "(expect 774)")
 print("date_key null:", dim_event.filter(F.col("date_key").isNull()).count(), "(expect 0)")
 print("date_key not in dim_date:", dim_event.join(dim_date, "date_key", "left_anti").count(), "(expect 0)")
+print("era null:", dim_event.filter(F.col("era").isNull()).count(), "(expect 0; else an event predates the first era)")
+dim_event.groupBy("era").agg(F.count("*").alias("events"), F.min("event_date").alias("first"), F.max("event_date").alias("last")).orderBy("first").show()
 
 # --- Write ---
 dim_event.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("gold_layer.dbo.dim_event")
@@ -231,6 +243,30 @@ dim_fight = silv_fight.select(
     "source",
 )
 
+# Weight-class display order and division limits - UFC ONLY (Emil, 2026-10-14).
+# Other promotions use the same names with different limits (ONE Flyweight = 135 lb).
+# Proper fix: reference table keyed on promotion + weight_class (see decisions.md).
+UFC_WEIGHT_CLASS_SORT = {
+    "Flyweight": 1, "Bantamweight": 2, "Featherweight": 3, "Lightweight": 4,
+    "Welterweight": 5, "Middleweight": 6, "Light Heavyweight": 7, "Heavyweight": 8,
+    "Women's Strawweight": 9, "Women's Flyweight": 10, "Women's Bantamweight": 11, "Women's Featherweight": 12,
+    "Catchweight": 13, "Open Weight": 14,
+}
+UFC_WEIGHT_LIMIT_LBS = {
+    "Flyweight": 125, "Bantamweight": 135, "Featherweight": 145, "Lightweight": 155,
+    "Welterweight": 170, "Middleweight": 185, "Light Heavyweight": 205, "Heavyweight": 265,
+    "Women's Strawweight": 115, "Women's Flyweight": 125, "Women's Bantamweight": 135, "Women's Featherweight": 145,
+}
+
+def to_map(d):
+    return F.create_map([F.lit(x) for pair in d.items() for x in pair])
+
+dim_fight = (
+    dim_fight
+    .withColumn("weight_class_sort", to_map(UFC_WEIGHT_CLASS_SORT)[F.col("weight_class")])
+    .withColumn("weight_limit_lbs", to_map(UFC_WEIGHT_LIMIT_LBS)[F.col("weight_class")])
+)
+
 # --- Checks ---
 dim_fighter = spark.read.table("gold_layer.dbo.dim_fighter")
 print("rows:", dim_fight.count(), "(expect 8555)")
@@ -240,6 +276,13 @@ print("f2_fighter_key not in dim_fighter:", dim_fight.join(dim_fighter, dim_figh
 print("winner_fighter_key null:", dim_fight.filter(F.col("winner_fighter_key").isNull()).count(), "(expect 7 = 5 draws + 2 NC)")
 print("winner not one of the two fighters:", dim_fight.filter(F.col("winner_fighter_key").isNotNull()
       & (F.col("winner_fighter_key") != F.col("f1_fighter_key")) & (F.col("winner_fighter_key") != F.col("f2_fighter_key"))).count(), "(expect 0)")
+
+# Guard: the weight-class maps above are UFC-only
+non_ufc = spark.read.table("silver_layer.dbo.silv_event").filter(F.col("promotion") != "UFC").count()
+assert non_ufc == 0, f"{non_ufc} non-UFC events - weight-class maps are UFC-only, build the promotion-keyed reference first"
+
+assert dim_fight.filter(F.col("weight_class_sort").isNull()).count() == 0, "weight_class without sort number"
+assert dim_fight.filter(F.col("weight_limit_lbs").isNull() & ~F.col("weight_class").isin("Catchweight", "Open Weight")).count() == 0, "weight_class without lbs limit"
 
 # --- Write ---
 dim_fight.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("gold_layer.dbo.dim_fight")

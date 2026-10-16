@@ -40,12 +40,15 @@
 # stats in that round. Every dimension hangs off it: dim_fight (fight_key), dim_fighter
 # (fighter_key + opponent_key), dim_event (event_key), dim_date (date_key).
 # Built by splitting silv_round's f1/f2 pairs into two rows, one per fighter (the corner unpivot).
+# age_at_fight + won are fighter-per-fight values, repeated on each round row: count fights with
+# DISTINCTCOUNT(fight_key) in Power BI, not rows.
 
 from pyspark.sql import functions as F
 
 silv_round = spark.read.table("silver_layer.dbo.silv_round")
 silv_fight = spark.read.table("silver_layer.dbo.silv_fight").select(
-    "fight_id", "event_id", "event_date", "f1_fighter_id", "f2_fighter_id")
+    "fight_id", "event_id", "event_date", "f1_fighter_id", "f2_fighter_id", "winner_fighter_id")
+dob = spark.read.table("silver_layer.dbo.silv_fighter").select("fighter_id", "dob")
 
 rounds = silv_round.join(silv_fight, "fight_id")
 
@@ -54,16 +57,22 @@ STATS = [c[3:] for c in silv_round.columns if c.startswith("f1_")]
 
 def one_corner(me, opp):
     # One fighter's view of every round: their stats, their key, their opponent's key
-    return rounds.select(
-        F.col("fight_id").alias("fight_key"),
-        "round",
-        F.xxhash64(f"f{me}_fighter_id").alias("fighter_key"),
-        F.xxhash64(f"f{opp}_fighter_id").alias("opponent_key"),
-        F.col("event_id").alias("event_key"),
-        F.date_format("event_date", "yyyyMMdd").cast("int").alias("date_key"),
-        "stats_missing",
-        *[F.col(f"f{me}_{s}").alias(s) for s in STATS],
-    )
+    return (rounds
+        .join(dob, rounds[f"f{me}_fighter_id"] == dob["fighter_id"], "left")
+        .select(
+            F.col("fight_id").alias("fight_key"),
+            "round",
+            F.xxhash64(f"f{me}_fighter_id").alias("fighter_key"),
+            F.xxhash64(f"f{opp}_fighter_id").alias("opponent_key"),
+            F.col("event_id").alias("event_key"),
+            F.date_format("event_date", "yyyyMMdd").cast("int").alias("date_key"),
+            # age in whole years at the fight (null if dob unknown)
+            F.floor(F.months_between("event_date", "dob") / 12).cast("int").alias("age_at_fight"),
+            # 1 = this fighter won the fight; 0 = lost, draw or no contest
+            (F.coalesce(F.col("winner_fighter_id") == F.col(f"f{me}_fighter_id"), F.lit(False))).cast("int").alias("won"),
+            "stats_missing",
+            *[F.col(f"f{me}_{s}").alias(s) for s in STATS],
+        ))
 
 fact_round = one_corner(1, 2).unionByName(one_corner(2, 1))
 
@@ -103,6 +112,19 @@ for s in ["sig_strikes_succ", "knockdowns", "ctrl_sec"]:
     gold_total = fact_round.agg(F.sum(s)).first()[0]
     print(f"{s}: silver {silver_total} | gold {gold_total}")
     assert silver_total == gold_total, f"{s} total changed in unpivot"
+
+# The 23 fights without round stats are carried through, flagged
+missing = fact_round.filter("stats_missing").select("fight_key").distinct().count()
+print("stats_missing fights:", missing)
+assert missing == 21, f"{missing} stats_missing fights, expected 21"
+
+# won: exactly one winner per decided fight, none on draws / NC
+fight_wins = fact_round.select("fight_key", "fighter_key", "won").distinct().groupBy("fight_key").agg(F.sum("won").alias("w"))
+print("fights by number of winners:"); fight_wins.groupBy("w").count().orderBy("w").show()
+assert fight_wins.filter("w > 1").count() == 0, "fight with two winners"
+
+# age_at_fight: plausible range
+fact_round.select(F.min("age_at_fight"), F.max("age_at_fight"), F.sum(F.col("age_at_fight").isNull().cast("int")).alias("null_rows")).show()
 
 print("All checks passed.")
 

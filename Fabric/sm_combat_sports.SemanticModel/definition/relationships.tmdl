@@ -1,0 +1,25 @@
+relationship 7a621d67-f9a4-7a59-e34f-090ef91cffe8
+	fromColumn: fact_round.fighter_key
+	toColumn: dim_fighter.fighter_key
+
+relationship c06d9a40-5739-896c-a9b3-0b50bee22762
+	isActive: false
+	fromColumn: fact_round.opponent_key
+	toColumn: dim_fighter.fighter_key
+
+relationship 9ae53d7f-a202-5cb2-d958-d1cc2f213f15
+	fromColumn: fact_round.fight_key
+	toColumn: dim_fight.fight_key
+
+relationship dc9682e3-d0cd-6f63-3c96-2c53fbb9b359
+	fromColumn: fact_round.date_key
+	toColumn: dim_date.date_key
+
+relationship 8f661f1a-144b-3259-56d2-8363964882fa
+	fromColumn: model_baseline_predictions.fight_key
+	toColumn: dim_fight.fight_key
+
+relationship 9d1db472-9241-2f6c-c63b-b3dd4dffd3c4
+	fromColumn: fact_round.event_key
+	toColumn: dim_event.event_key
+

@@ -1,0 +1,120 @@
+table model_baseline_predictions
+	lineageTag: 6abab216-e1a1-49d3-834b-c108c043cdec
+	sourceLineageTag: [dbo].[model_baseline_predictions]
+
+	measure 'Fight Label' =
+			
+			VAR a = LOOKUPVALUE ( dim_fighter[full_name], dim_fighter[fighter_key],
+			                      SELECTEDVALUE ( model_baseline_predictions[a_fighter_key] ) )
+			VAR b = LOOKUPVALUE ( dim_fighter[full_name], dim_fighter[fighter_key],
+			                      SELECTEDVALUE ( model_baseline_predictions[b_fighter_key] ) )
+			RETURN a & " vs " & b
+		lineageTag: 38ea7117-7676-4d5b-b685-93566fd371bf
+
+		changedProperty = Name
+
+	measure 'Wrong Pick Confidence' =
+			
+			VAR p   = SELECTEDVALUE ( model_baseline_predictions[p_a_win] )
+			VAR won = SELECTEDVALUE ( model_baseline_predictions[a_won] )
+			VAR pickedA = p > 0.5
+			RETURN
+			    IF ( pickedA <> ( won = 1 ), MAX ( p, 1 - p ) )
+		lineageTag: a37bc7a6-2ac4-4ab5-95fc-b98971858585
+
+		changedProperty = Name
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column fight_key
+		dataType: string
+		lineageTag: acc8fe18-6b83-4aad-bd40-5b20c53e11ab
+		sourceLineageTag: fight_key
+		summarizeBy: none
+		sourceColumn: fight_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column event_date
+		dataType: dateTime
+		formatString: Short Date
+		lineageTag: 5ce6d361-f02d-4202-b002-3e39f5fcb1ee
+		sourceLineageTag: event_date
+		summarizeBy: none
+		sourceColumn: event_date
+
+		changedProperty = IsHidden
+
+		changedProperty = FormatString
+
+		annotation SummarizationSetBy = Automatic
+
+	column a_fighter_key
+		dataType: int64
+		formatString: 0
+		lineageTag: 381a3004-6ac0-49b7-8d6a-013ef7e50612
+		sourceLineageTag: a_fighter_key
+		summarizeBy: sum
+		sourceColumn: a_fighter_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column b_fighter_key
+		dataType: int64
+		formatString: 0
+		lineageTag: 2db4e2ec-6963-4408-ac7a-29eaf962951a
+		sourceLineageTag: b_fighter_key
+		summarizeBy: sum
+		sourceColumn: b_fighter_key
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column p_a_win
+		dataType: double
+		lineageTag: 5b9cd411-1c7f-41b8-bba5-51da326b7a19
+		sourceLineageTag: p_a_win
+		summarizeBy: sum
+		sourceColumn: p_a_win
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column a_won
+		dataType: int64
+		formatString: 0
+		lineageTag: 01bd7c2f-4a0c-4c0f-9bff-8304795e97c6
+		sourceLineageTag: a_won
+		summarizeBy: sum
+		sourceColumn: a_won
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column split
+		dataType: string
+		lineageTag: 47c4e3dc-e810-4db9-901c-070eead5d2fb
+		sourceLineageTag: split
+		summarizeBy: none
+		sourceColumn: split
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition model_baseline_predictions = entity
+		mode: directLake
+		source
+			entityName: model_baseline_predictions
+			schemaName: dbo
+			expressionSource: 'DirectLake - gold_layer'
+

@@ -1,11 +1,11 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
-    "type": "Notebook",
-    "displayName": "30_warehouse_fact_round"
+    "type": "Report",
+    "displayName": "DB_Fight_Stats_by_Weightclass"
   },
   "config": {
     "version": "2.0",
-    "logicalId": "2607f8ab-df5d-a4bc-4791-c461cde97a6d"
+    "logicalId": "d5f04a1c-bf88-97ca-438b-09693c69359a"
   }
 }

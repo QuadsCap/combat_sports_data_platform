@@ -1,0 +1,33 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "86733268b633917eb05f",
+  "position": {
+    "x": 0,
+    "y": 223.33333333333331,
+    "z": 1000,
+    "height": 37.777777777777779,
+    "width": 1490,
+    "tabOrder": 1000
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Win rate per fighter-fight · unified era · draws/NC excluded · cells with n < 30 not rated · 63 fighter-fights without date of birth excluded · shows age and selection effects combined. Womans Featherweight, Open, catch is hidden (-277 fights)"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
