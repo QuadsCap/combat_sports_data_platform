@@ -1,43 +1,72 @@
 # Combat Sports Data Platform
 
-End-to-end forecasting pipeline in Microsoft Fabric: ingestion (Kaggle bulk, then UFCStats scraped incrementally) → PySpark cleaning & entity resolution → dimensional warehouse (`fact_round` grain, SCD2) → calibrated fight-outcome model (Elo + logistic regression, Brier/log-loss vs. market benchmark) → Power BI.
+An end-to-end **fight-outcome forecasting platform** built in Microsoft Fabric. Raw fight data goes in one end; a Power BI report with descriptive trends and a calibrated prediction model comes out the other. UFC/MMA is the first data set; the platform is built so the source can be swapped without touching anything downstream.
 
-## What "end-to-end" means here
+```
+Kaggle file ──► bronze ──► silver ──► gold (star schema) ──► baseline model ──► Power BI
+               raw, as-is  cleaned to a   fact_round +          logistic          2 pages
+                           source-free    4 dimensions          regression
+                           contract
+```
 
-The pipeline is not finished when the data is clean. **Clean data is the middle of the project, not the end.** Every phase ends with something a human can look at:
+## Where it stands
 
-- **Phase 1** ends at a **Power BI report** built on the gold tables (Kaggle data), carrying descriptive trends *and* a deliberately simple baseline model (win/loss record, age and age gap, layoff, weight class). Simple on purpose: it is the floor the model has to beat.
-- **Phase 2** ends with the **source switched**: UFCStats scraped and loaded incrementally into the same silver contract, the same gold tables and the same report, with no changes downstream of silver.
-- **Phase 3** ends at the **real model**: Elo ratings feeding a logistic regression, scored on calibration and log loss, benchmarked against closing odds, published.
+| Phase | What | Status |
+|---|---|---|
+| **1** | Platform on Kaggle data → Power BI + baseline model | **Built** (gate Sat 17 Oct 2026) |
+| 2 | Second source loaded incrementally into the same silver contract — same gold, same report, no downstream edits | Gate Sun 8 Nov |
+| 3 | Real model: rating system + logistic regression, scored on calibration, benchmarked against closing odds | Gate Sun 29 Nov |
 
-Power BI is the least-practised layer in this stack, so Phase 1 budgets learning time for it rather than assuming the report is an afterthought.
+## Phase 1 in numbers
+
+- **8,555 fights**, 20,145 rounds → `fact_round` at **fighter × round** grain (40,290 rows, 0 orphan keys).
+- **Baseline model** — logistic regression, no tuning, on record, age, age gap, layoff, weight class, reach/height differential. Trained on fights before 2023, tested on 1,735 fights from 2023-01-01 to 2026-05-16:
+
+| Metric (test) | Baseline | Coin flip |
+|---|---|---|
+| Accuracy | **0.598** | 0.500 |
+| Log loss | **0.658** | 0.693 |
+| Brier | **0.233** | 0.250 |
+
+  This is deliberately simple. It is **the floor the Phase 3 model has to beat**. Calibration is close: bins holding 96 % of test fights land within 1–4 pp of the diagonal.
+
+## The report
+
+- **Trends** — win rate by age band × weight class; finish rate (KO/TKO + submission) by weight class.
+- **Baseline model** — test metrics vs. naive, calibration plot, and the model's most confident wrong predictions.
+
+## Design choices worth knowing
+
+- **Medallion layers.** `bronze_` is raw and append-only (a load-ID guard makes re-ingest a no-op). `silv_` is cleaned to the [silver contract](docs/silver-contract.md). Gold is the star schema.
+- **Source-swap contract.** Silver is source-agnostic: source-specific column names live only in that source's `20_clean_*` notebook, and nothing downstream of silver reads bronze. Phase 2 tests this for real.
+- **Entity resolution.** Fighter identity resolved on UFCStats `fighter_id` (17,110 corner rows → 2,686 fighters); fuzzy name matching arrives with the Phase 2 source if it lacks those IDs.
+- **Star schema.** `fact_round` with `dim_fight`, `dim_fighter`, `dim_event`, `dim_date`. `dim_fighter` is SCD Type 1 for now — time-varying attributes (weight class, age at fight) already live at fight grain ([why](docs/decisions.md)).
+- **No leakage in the model.** Fighter A vs B is assigned by a stable hash of the fight key, not by corner (corner 1 wins 64 %), and the split is by date.
+- **Failures are logged, not hidden.** Bugs found along the way — and how they were caught — are in [`decisions.md`](docs/decisions.md).
 
 ## Repo layout
 
 ```
-├── CLAUDE.md              # Instructions for Claude Code in this project
-├── docs/
-│   ├── project-definition.md   # Source of truth: scope, phases, gates
-│   ├── build-plan.md           # Sprint plan: what gets built which week
-│   ├── silver-contract.md      # Source-agnostic silver schema (Sprint 2)
-│   └── decisions.md            # Dated decision log
-├── notebooks/             # Fabric notebooks, synced via Git integration
-│   ├── 10_ingest_*        # Bronze, one per source (kaggle, ufcstats)
-│   ├── 20_clean_*         # Silver, one per source, all to the silver contract
-│   ├── 30_warehouse_*     # Gold
-│   └── 40_model_*         # Baseline (Phase 1) and full model (Phase 3)
-├── src/                   # Shared Python (entity resolution helpers, etc.)
-└── data/                  # Local samples only — gitignored
+├── Fabric/                 # Fabric items, synced via Git integration
+│   ├── 10_ingest_kaggle    #   bronze
+│   ├── 20_clean_kaggle     #   silver (Kaggle column names live only here)
+│   ├── 30_warehouse_dims   #   gold dimensions
+│   ├── 31_warehouse_fact_round
+│   ├── 40_model_baseline   #   baseline model → predictions, metrics, calibration in gold
+│   ├── sm_combat_sports.SemanticModel
+│   └── DB_Fight_Stats_by_Weightclass.Report
+└── docs/
+    ├── project-definition.md   # scope, phases, gates (source of truth)
+    ├── build-plan.md           # what gets built which week
+    ├── silver-contract.md      # source-agnostic silver schema
+    ├── data-coverage.md        # what the Kaggle data covers
+    └── decisions.md            # dated decision log
 ```
 
-## Setup checklist (Phase 0)
+## Run it
 
-- [x] Create GitHub repo from this skeleton; `project-definition.md` + `decisions.md` in `docs/`
-- [x] Open in Claude Code (CLAUDE.md auto-loads)
-- [x] Connect Fabric workspace ↔ repo (Workspace settings → Git integration), and understand the sync flow both directions
-- [ ] Kaggle sample pull: verify per-round dataset coverage/recency → write the coverage note
-- [ ] Eyeball ufcstats.com robots.txt/ToS (Sprint 1, blocking for Phase 2)
-- [ ] Salvage reusable structure from the Market Stress repo (point Claude Code at it)
-- [x] Confirm gate dates: Phase 1 Sat 17 Oct · Phase 2 Sun 8 Nov · Phase 3 Sun 29 Nov
+In the Fabric workspace, run the notebooks in order: `10 → 20 → 30 → 31 → 40`, then refresh the report. Kaggle files land under `Files/kaggle_file_load/<load_id>/` in the bronze lakehouse; `data/` is gitignored because the Kaggle pull is reproducible.
 
-Week-by-week execution lives in [`docs/build-plan.md`](docs/build-plan.md).
+---
+
+*Framing: this is a forecasting-methodology project — calibration and honest evaluation, not a betting system.*

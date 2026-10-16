@@ -59,6 +59,7 @@ Build an end-to-end data platform and forecasting model on **combat sports** fig
 
 ### Phase 2 — Source switch (UFCStats scrape)
 
+- Look into the possibility of getting other data (Tapology, Bellator, PFL -> Other?)
 - Scraper for UFCStats event → fight → round pages, run from a Fabric notebook, landing `bronze_ufcstats_*`.
 - `20_clean_ufcstats` maps the scrape onto the **same silver contract** as Kaggle.
 - **Incremental load:** new events appended via Delta `MERGE` on natural keys; re-running is idempotent (no duplicates). Late-arriving corrections handled here.
@@ -67,10 +68,13 @@ Build an end-to-end data platform and forecasting model on **combat sports** fig
 - Gold and Power BI refresh with the scraped data **without changes downstream of silver**. Any change that was needed is listed honestly — that list is the test of the contract.
 - **Open, decided in Sprint 5:** does the scrape backfill full history, or does Kaggle stay the historical source up to 2026-05-16 with the scrape taking over after it?
 
+- Think about SCD2 build here.
+
 **Gate:** gold tables include fights after 2026-05-16 from the scrape, the incremental load re-runs cleanly, and the disagreement count is written up.
 
 ### Phase 3 — Model
 
+- Brainstorm and building of user defined variables.
 - Elo/Glicko ratings.
 - Logistic regression on rating + contextual features.
 - Calibration curve, Brier score, log loss.

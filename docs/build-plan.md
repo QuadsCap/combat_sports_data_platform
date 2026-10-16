@@ -112,7 +112,7 @@ shows two SCD2 rows with correct validity windows.
 **Goal: end-to-end. A human opens a report and learns something.**
 
 - [x] `30_warehouse_fact_round` — the fact table, keys wired to the dimensions. Reads silver only.
-- [ ] `40_model_baseline` — win/loss record, age, age gap, layoff, weight class, reach/height
+- [x] `40_model_baseline` — win/loss record, age, age gap, layoff, weight class, reach/height
       differential. Logistic regression, no tuning. Record accuracy and log loss. **This is the
       number the Phase 3 model has to beat.**
 - [ ] **Power BI** — budget ~5 h of this sprint, learning included. One report, two pages:
@@ -146,6 +146,8 @@ the date.**
 **Goal: scraped data flows into the same silver, incrementally.**
 
 - [ ] `20_clean_ufcstats` — map the scrape onto the silver contract. UFCStats column names only here.
+- [ ] Refresh fighter profiles (dob, reach, height) from the scraped fighter pages, and add a silver check:
+      profile completeness by debut year. Kaggle left recent fighters' profiles empty (decisions.md 2026-10-11).
 - [ ] Incremental load: Delta `MERGE` on natural keys. Run it twice; the second run changes
       nothing. That is the idempotency test.
 - [ ] Load every event from 2026-05-16 to today.
