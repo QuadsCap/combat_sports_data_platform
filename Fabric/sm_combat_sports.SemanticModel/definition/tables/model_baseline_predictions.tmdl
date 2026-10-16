@@ -20,11 +20,10 @@ table model_baseline_predictions
 			VAR pickedA = p > 0.5
 			RETURN
 			    IF ( pickedA <> ( won = 1 ), MAX ( p, 1 - p ) )
+		formatString: 0%
 		lineageTag: a37bc7a6-2ac4-4ab5-95fc-b98971858585
 
 		changedProperty = Name
-
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
 
 	column fight_key
 		dataType: string

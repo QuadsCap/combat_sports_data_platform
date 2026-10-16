@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "1be08b8f751f2dba1f99",
   "position": {
-    "x": 422,
-    "y": 430,
+    "x": 32,
+    "y": 328,
     "z": 3000,
-    "height": 383,
-    "width": 510,
+    "height": 720,
+    "width": 900,
     "tabOrder": 3000
   },
   "visual": {
@@ -167,7 +167,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'“Calibration: predicted vs actual (test, 2023–2026)”'"
+                  "Value": "'Calibration: predicted vs actual (test, 2023–2026)'"
                 }
               }
             }

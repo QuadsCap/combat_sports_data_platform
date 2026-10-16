@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "aa79246d37c3a500a1b8",
   "position": {
-    "x": 393,
-    "y": 13,
+    "x": 956,
+    "y": 328,
     "z": 4000,
-    "height": 387,
-    "width": 539,
+    "height": 720,
+    "width": 932,
     "tabOrder": 4000
   },
   "visual": {
@@ -84,10 +84,10 @@
                     "Entity": "model_baseline_predictions"
                   }
                 },
-                "Property": "Fight Label"
+                "Property": "Wrong Pick Confidence"
               }
             },
-            "direction": "Ascending"
+            "direction": "Descending"
           }
         ]
       }
@@ -139,7 +139,7 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "254.99776903389215D"
+                  "Value": "520D"
                 }
               }
             }
@@ -153,13 +153,27 @@
             "value": {
               "expr": {
                 "Literal": {
-                  "Value": "110.9964695220613D"
+                  "Value": "180D"
                 }
               }
             }
           },
           "selector": {
             "metadata": "model_baseline_predictions.Wrong Pick Confidence"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "180D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "model_baseline_predictions.event_date"
           }
         }
       ],
@@ -175,9 +189,71 @@
             }
           }
         }
+      ],
+      "columnFormatting": [
+        {
+          "properties": {
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#F0717A'"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "model_baseline_predictions.Wrong Pick Confidence"
+          }
+        }
       ]
     },
-    "drillFilterOtherVisuals": true
+    "drillFilterOtherVisuals": true,
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Most confident wrong predictions'"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "subTitle": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Top 10 test fights where the baseline picked the loser · confidence = probability it gave its pick'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
   },
   "filterConfig": {
     "filters": [

@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "9bb4aa9db18815117ec2",
   "position": {
-    "x": 10,
-    "y": 290,
+    "x": 658.6666666666666,
+    "y": 104,
     "z": 1000,
-    "height": 280,
-    "width": 280,
+    "height": 200,
+    "width": 602.6666666666666,
     "tabOrder": 1000
   },
   "visual": {
@@ -59,6 +59,13 @@
               "expr": {
                 "Literal": {
                   "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Log loss (test)'"
                 }
               }
             }

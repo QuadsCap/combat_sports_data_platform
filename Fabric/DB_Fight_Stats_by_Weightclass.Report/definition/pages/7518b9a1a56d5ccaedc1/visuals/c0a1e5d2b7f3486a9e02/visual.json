@@ -1,0 +1,37 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "c0a1e5d2b7f3486a9e02",
+  "position": {
+    "x": 1176,
+    "y": 916,
+    "width": 712,
+    "height": 110,
+    "z": 5001,
+    "tabOrder": 5001
+  },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [
+        {
+          "properties": {
+            "paragraphs": [
+              {
+                "textRuns": [
+                  {
+                    "value": "Finish = KO/TKO + Submission over all fights · unified era · sorted by rate",
+                    "textStyle": {
+                      "fontSize": "10pt",
+                      "color": "#9AA0A8"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "e2cbefc5535b1c24e81f",
   "position": {
-    "x": 10,
-    "y": 582,
+    "x": 1285.3333333333333,
+    "y": 104,
     "z": 2000,
-    "height": 280,
-    "width": 280,
+    "height": 200,
+    "width": 602.6666666666666,
     "tabOrder": 2000
   },
   "visual": {
@@ -59,6 +59,13 @@
               "expr": {
                 "Literal": {
                   "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Brier (test)'"
                 }
               }
             }
