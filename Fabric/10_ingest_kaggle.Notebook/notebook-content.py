@@ -20,6 +20,20 @@
 # META   }
 # META }
 
+# MARKDOWN ********************
+
+# ## 10_ingest_kaggle — Landing files → Bronze
+# 
+# Loads the Kaggle parquet files into bronze Delta tables, untouched, with load metadata. The first step of the pipeline.
+# 
+# - **Reads:** `Files/kaggle_file_load/<LOAD_ID>/` (`full_data_silver_plus.parquet`, `ufc_features.parquet`), uploaded by hand from Kaggle
+# - **Writes:** `bronze_layer.dbo.bronze_kaggle_full_data_silver_plus`, `bronze_kaggle_ufc_features`
+# - **Run order:** first; set `LOAD_ID` to the landing folder date before running
+# - **Metadata added:** `_ingested_at`, `_source_file`, `_load_id`. Source columns are not changed
+# - **Idempotent:** append mode, but a `LOAD_ID` that already exists in the table is skipped
+# - **Limitation:** the cells before the ingest cell are exploration; the "Guard cell" uses an undefined `TABLE` and fails if run on its own
+
+
 # CELL ********************
 
 notebookutils.fs.ls("Files/kaggle_file_load/2026-09-24/full_data_silver_plus.parquet")
@@ -60,20 +74,6 @@ display(df2)
 df2 = spark.read.parquet("Files/kaggle_file_load/2026-09-24/ufc_features.parquet")
 df2.printSchema()  
 df2.count()
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
-#Guard cell
-
-print(spark.table(TABLE).count())
-print(len(spark.table(TABLE).columns))
 
 # METADATA ********************
 

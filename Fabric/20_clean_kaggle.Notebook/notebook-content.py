@@ -23,6 +23,22 @@
 # META   }
 # META }
 
+# MARKDOWN ********************
+
+# ## 20_clean_kaggle — Bronze → Silver (Kaggle source)
+# 
+# Cleans the Kaggle data into the source-agnostic silver tables defined in `docs/silver-contract.md`. The **only** notebook allowed to know Kaggle column names: the rename cell translates them, and nothing below it uses them.
+# 
+# - **Reads:** `bronze_layer.dbo.bronze_kaggle_full_data_silver_plus` (bronze only)
+# - **Writes:** `silver_layer.dbo.silv_event`, `silv_fight`, `silv_round`, `silv_fighter`
+# - **Run order:** after `10_ingest_kaggle`. Inside the notebook: rename cell → `silv_event` / `silv_fight` → `silv_round` and `silv_fighter` (each reads bronze itself) → sign-off checks
+# - **Keys:** natural keys are UFCStats IDs parsed from the URLs (`event_id`, `fight_id`, `fighter_id`), not names
+# - **Derived:** `method`, `decision_type`, `outcome` (win / draw / no_contest), `winner_fighter_id`, `title_fight`, `finish_time_sec`
+# - **Shape changes:** rounds unpivoted from wide (5 rounds × 2 corners) to one row per fight × round; fighters stacked from both corners to one row per fighter (name from the most recent fight)
+# - **Manual fixes** (verified on ufcstats.com, 2026-10-07): weight classes missing in the source, keyed on `fight_id`; Tyrell Fortune's profile, which carried Regina Malpica's data
+# - **Checks:** referential integrity, round stats (succ ≤ att, no negatives), finish round ≤ scheduled, odds > 1, age 18–50
+
+
 # CELL ********************
 
 from pyspark.sql import functions as F

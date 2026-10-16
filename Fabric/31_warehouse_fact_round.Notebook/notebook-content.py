@@ -25,7 +25,7 @@
 
 # MARKDOWN ********************
 
-# # 30_warehouse_fact_round — Silver → Gold fact table
+# ## 31_warehouse_fact_round — Silver → Gold fact table.
 # 
 # Builds `fact_round`: one row per fighter per round (`docs/decisions.md` 2026-10-08).
 # 

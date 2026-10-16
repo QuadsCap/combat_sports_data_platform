@@ -31,7 +31,7 @@
 # 
 # - **Reads:** `gold_layer.dbo.dim_fight`, `dim_event`, `dim_fighter`, `fact_round` (gold only)
 # - **Writes:** `gold_layer.dbo.model_baseline_predictions`, `model_baseline_metrics` (for Power BI)
-# - **Run order:** after `30_warehouse_dims` and `30_warehouse_fact_round`
+# - **Run order:** `30_warehouse_fact_round to 31_warehouse_fact_round.`
 # - **Features (A − B):** prior wins, prior losses, layoff, debut, age, reach, height. Only fights *before* the predicted fight are used (no leakage)
 # - **Scope:** unified-rules era only (from UFC 28, 2000-11-17); draws / no contests excluded
 # - **A vs B:** assigned by a stable hash of `fight_key`, not by corner (corner 1 wins 64 %)
@@ -195,7 +195,8 @@ print(worst.round(2).to_string())
 # CELL ********************
 
 # Extreme predictions (< 2% or > 98%) in the test set, with names and links for manual checking.
-# Pattern found: one fighter is missing ALL profile data (age, reach, height).
+# Tripwire: 87 extremes with missing flags (decisions.md 2026-10-11); 0 after the flags were removed.
+# If this ever lists rows again, check them before trusting the metrics.
 
 dimf = spark.read.table("gold_layer.dbo.dim_fighter").select(
     "fighter_key", "display_name", "dob", "reach_cm", "height_cm").toPandas()
@@ -218,7 +219,8 @@ out = ext[cols].sort_values("event_date")
 out["p_a"] = out["p_a"].round(3)
 
 print(len(out), "extreme predictions")
-display(spark.createDataFrame(out.astype(str)))
+if len(out) > 0:
+    display(spark.createDataFrame(out.astype(str)))
 
 # METADATA ********************
 
@@ -227,21 +229,11 @@ display(spark.createDataFrame(out.astype(str)))
 # META   "language_group": "synapse_pyspark"
 # META }
 
-# CELL ********************
+# MARKDOWN ********************
 
 # Does missing reach mean something different over time? Share missing + win rate when missing, by year.
-r = X.assign(year=fights["event_date"].dt.year, y=y)
-m = r[r["missing_reach"] != 0]
-print(m.assign(fighter_with_missing_won=np.where(m["missing_reach"] == 1, m["y"], 1 - m["y"]))
-       .groupby("year").agg(fights=("y", "size"), missing_side_win_rate=("fighter_with_missing_won", "mean"))
-       .round(2).to_string())
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
+# 
+# Cell here is deleted, as it interfered with "Run All"
 
 # MARKDOWN ********************
 
@@ -265,9 +257,6 @@ print(m.assign(fighter_with_missing_won=np.where(m["missing_reach"] == 1, m["y"]
 # - bins with few fights are noise and are flagged, not trusted
 # 
 # Test split only (2023-01-01 → 2026-05-16). Written to `gold_layer.dbo.model_baseline_calibration`.
-
-
-# MARKDOWN ********************
 
 
 # CELL ********************

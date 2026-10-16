@@ -20,6 +20,17 @@
 # META   }
 # META }
 
+# MARKDOWN ********************
+
+# ## 11_profile_kaggle — Bronze profiling (exploration)
+# 
+# Looks at the raw Kaggle data before cleaning: size, date columns, and which fighter attributes change between a fighter's fights. Its findings shaped `docs/silver-contract.md`.
+# 
+# - **Reads:** `bronze_layer.dbo.bronze_kaggle_full_data_silver_plus`; some cells read the landing parquet directly
+# - **Writes:** nothing
+# - **Run order:** after `10_ingest_kaggle`; not part of the pipeline run
+# - **Key output:** % of fighters (3+ fights) whose record, career stats, ranking, weight, height and reach change across their fights
+
 # CELL ********************
 
 df1 = spark.read.parquet("Files/kaggle_file_load/2026-09-24/full_data_silver_plus.parquet")
