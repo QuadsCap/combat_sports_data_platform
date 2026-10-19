@@ -30,8 +30,8 @@
 # A simple, interpretable logistic regression that predicts **"did fighter A win?"** from the difference between the two fighters. Its test score is **the floor the Phase 3 model must beat** (`docs/decisions.md` 2026-10-10).
 # 
 # - **Reads:** `gold_layer.dbo.dim_fight`, `dim_event`, `dim_fighter`, `fact_round` (gold only)
-# - **Writes:** `gold_layer.dbo.model_baseline_predictions`, `model_baseline_metrics` (for Power BI)
-# - **Run order:** `30_warehouse_fact_round to 31_warehouse_fact_round.`
+# - **Writes:** `gold_layer.dbo.model_baseline_predictions`, `model_baseline_metrics`, `model_baseline_calibration` (for Power BI)
+# - **Run order:** after `30_warehouse_dims` and `31_warehouse_fact_round`; last in the pipeline
 # - **Features (A − B):** prior wins, prior losses, layoff, debut, age, reach, height. Only fights *before* the predicted fight are used (no leakage)
 # - **Scope:** unified-rules era only (from UFC 28, 2000-11-17); draws / no contests excluded
 # - **A vs B:** assigned by a stable hash of `fight_key`, not by corner (corner 1 wins 64 %)
@@ -228,12 +228,6 @@ if len(out) > 0:
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
-
-# MARKDOWN ********************
-
-# Does missing reach mean something different over time? Share missing + win rate when missing, by year.
-# 
-# Cell here is deleted, as it interfered with "Run All"
 
 # MARKDOWN ********************
 

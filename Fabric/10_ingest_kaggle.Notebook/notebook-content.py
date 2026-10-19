@@ -31,7 +31,7 @@
 # - **Run order:** first; set `LOAD_ID` to the landing folder date before running
 # - **Metadata added:** `_ingested_at`, `_source_file`, `_load_id`. Source columns are not changed
 # - **Idempotent:** append mode, but a `LOAD_ID` that already exists in the table is skipped
-# - **Limitation:** the cells before the ingest cell are exploration; the "Guard cell" uses an undefined `TABLE` and fails if run on its own
+# - **Limitation:** the cells before the ingest cell are exploration (list the landing folder, preview and count the two files); they read only and write nothing
 
 
 # CELL ********************
