@@ -25,7 +25,13 @@ A capture list, not a backlog. Nothing here is in scope until it gets a dated en
 
 ### Data platform
 
-- 
+- Fighter ranking as of fight date, from [jerzyszocik/ufc-rankings-history](https://www.kaggle.com/datasets/jerzyszocik/ufc-rankings-history) (updated 2026-10-15; raised 2026-10-18). Candidate Phase 3 feature for the Sprint 8 brainstorm: ranking and ranking gap at fight time, unranked as its own value. Join must be as-of (latest ranking snapshot before the fight date), never the current ranking.
+- Self-produced stats from watching fights (raised 2026-10-18): fight style, is the fighter improving, and other judgements no scraped source carries. Parked to the Sprint 8 feature brainstorm (decisions.md 2026-10-18).
+  - *Claude perspective:*
+    - It is a source like any other: a manual-entry table (fight × fighter grain, keyed on `fight_id` + `fighter_id`) with its own `10_ingest_*` / `20_clean_*` pair, a `rated_by` and `rated_at` column, and a fixed rating scale written down before the first entry.
+    - Cost is watch time: at ~15 min per fight, 100 fights is ~25 h. Decide a sample (one division, recent years) before starting.
+    - Leakage: a rating written after watching a fight must only feed predictions for that fighter's *later* fights.
+    - Compare against what round stats can already derive (striking/grappling share, finish profile): the hand ratings earn their cost only if they add signal beyond those.
 
 ### Business
 

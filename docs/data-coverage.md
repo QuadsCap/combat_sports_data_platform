@@ -2,6 +2,8 @@
 
 *Source: `bronze_kaggle_full_data_silver_plus` · load `2026-09-24` · profiled 2026-09-25/26 in the `bronze_layer` SQL analytics endpoint (queries not yet saved to `11_profile_kaggle`)*
 
+*Dataset: [jerzyszocik/ufc-fight-forecast-complete-gold-modeling-dataset](https://www.kaggle.com/datasets/jerzyszocik/ufc-fight-forecast-complete-gold-modeling-dataset) (files `full_data_silver_plus.parquet`, `ufc_features.parquet`; last updated 2026-06-10 per the Kaggle API, 2026-10-18). A different maintainer's dataset in the same format, [scarekrow/ufc-data](https://www.kaggle.com/datasets/scarekrow/ufc-data), runs through 2026-10-10 (8,937 fights / 793 events, `UFC_full_data_silver_v2.csv`, 361 columns).*
+
 What the Kaggle data actually contains, in plain numbers. It answers one question for Sprint 1 — can we build a table with one row per round? — and feeds the silver contract in Sprint 2.
 
 Counts marked *(derived)* are computed from a null % in the screenshots × 8,555 fights, not queried directly.

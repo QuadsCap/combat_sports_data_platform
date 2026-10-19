@@ -36,11 +36,15 @@ If everything else is cut, this still has to exist by the Phase 1 gate:
 
 And by the Phase 2 gate:
 
-> **Scraped event → bronze → same silver contract → same gold → same report, no downstream edits.**
+> **Cito event → bronze → same silver contract → same gold → same report, no downstream edits.**
 
 ---
 
-## Sprint 0 — Sun 20 Sep · done
+## Phase 1 — Platform on Kaggle · gate Sat 17 Oct · **done 2026-10-16**
+
+End-to-end run clean (decisions.md 2026-10-16). Cuts taken: fuzzy matching (→ Phase 2), SCD2 → SCD1.
+
+### Sprint 0 — Sun 20 Sep · done
 
 - [x] Connect Fabric workspace ↔ GitHub repo (Workspace settings → Git integration).
 - [x] Sync both directions. This is the whole of the CI/CD scope — do not build more than this.
@@ -48,7 +52,7 @@ And by the Phase 2 gate:
 
 ---
 
-## Sprint 1 — Uge 4 (Mon 21 – Sun 27 Sep) · ~12 h
+### Sprint 1 — Uge 4 (Mon 21 – Sun 27 Sep) · ~12 h
 
 **Goal: raw data is in Fabric and you know what it actually contains.**
 
@@ -71,7 +75,7 @@ while you are still doing full loads.
 
 ---
 
-## Sprint 2 — Uge 5 (Mon 28 Sep – Sun 4 Oct) · ~12 h
+### Sprint 2 — Uge 5 (Mon 28 Sep – Sun 4 Oct) · ~12 h
 
 **Goal: clean, typed, deduplicated silver — to a written contract.**
 
@@ -89,7 +93,7 @@ bronze→silver row counts with a one-line reason for each delta.
 
 ---
 
-## Sprint 3 — Uge 6 (Mon 5 – Sun 11 Oct) · ~14 h · hardest sprint
+### Sprint 3 — Uge 6 (Mon 5 – Sun 11 Oct) · ~14 h · hardest sprint
 
 **Goal: fighters resolve to one identity, and the dimensions exist.**
 
@@ -107,7 +111,7 @@ shows two SCD2 rows with correct validity windows.
 
 ---
 
-## Sprint 4 — Uge 7 (Mon 12 – Sat 17 Oct) · ~14 h · **PHASE 1 GATE**
+### Sprint 4 — Uge 7 (Mon 12 – Sat 17 Oct) · ~14 h · **PHASE 1 GATE**
 
 **Goal: end-to-end. A human opens a report and learns something.**
 
@@ -115,10 +119,10 @@ shows two SCD2 rows with correct validity windows.
 - [x] `40_model_baseline` — win/loss record, age, age gap, layoff, weight class, reach/height
       differential. Logistic regression, no tuning. Record accuracy and log loss. **This is the
       number the Phase 3 model has to beat.**
-- [ ] **Power BI** — budget ~5 h of this sprint, learning included. One report, two pages:
+- [x] **Power BI** — budget ~5 h of this sprint, learning included. One report, two pages:
       descriptive trends (win rate by age band across weight classes, finish rate by weight class)
       and baseline model output.
-- [ ] Update the README so a stranger understands the project in 60 seconds.
+- [x] Update the README so a stranger understands the project in 60 seconds.
 
 **Done when — Sat 17 Oct:** a Power BI report opens on the gold tables and shows real numbers, and
 the whole path Kaggle → report can be re-run. If it does not run end-to-end, **scope gets cut, not
@@ -126,31 +130,42 @@ the date.**
 
 ---
 
-## Sprint 5 — Uge 8 (Mon 19 – Sun 25 Oct) · ~12 h
+## Phase 2 — Source switch · gate Sun 8 Nov · **in progress from 19 Oct**
 
-**Goal: one scraped event lands in bronze.**
+> **Own target: Wed 4 Nov** (WoW playable from the 5th; decisions.md 2026-10-18). The gate stays
+> 8 Nov; 5–8 Nov is buffer.
 
-- [ ] Decide and document: adapt an OSS scraper or write a minimal one (requests + BeautifulSoup
-      in a Fabric notebook). Polite rate limit, per the ToS check.
-- [ ] Decide and document: full-history backfill from the scrape, or Kaggle stays the history up
-      to 2026-05-16 and the scrape takes over after it.
-- [ ] `10_ingest_ufcstats` — scrape one event → fights → rounds, land as `bronze_ufcstats_*`
-      with ingest timestamp + source URL. Raw, immutable.
+> **Source: Cito API** (decisions.md 2026-10-18), replacing the own UFCStats scraper the ToS check
+> ruled out. Cito event IDs = UFCStats IDs, so fights and fighters join to Kaggle without name matching.
 
-**Done when:** one event after 2026-05-16 is queryable in bronze with round-level stats.
+### Sprint 5 — Uge 8 (Mon 19 – Sun 25 Oct) · ~12 h
+
+**Goal: one Cito event lands in bronze.**
+
+- [x] **Decide the Phase 2 source** → Cito API (decisions.md 2026-10-18).
+- [x] API key out of the notebook (Key Vault `combat-sports-vang-v1`, verified 2026-10-18): Fabric Git sync commits notebook source, so a key typed in a
+      cell lands on GitHub.
+- [x] Explore the free tier on one recent event (`10_explore_cito`, decisions.md 2026-10-18): response shape, IDs, calls per event, and whether
+      Cito carries odds, judge scores and fighter profiles (dob, reach, height).
+- [x] Gap 16 May → ~18 Sep: filled from Kaggle scarekrow v2, not Cito Pro (decisions.md 2026-10-18).
+      Its own `10_ingest` / `20_clean` pair, after the Cito path works.
+- [x] `10_ingest_cito` — one event → bouts → rounds, raw JSON landed as `bronze_cito_*` with
+      ingest timestamp + request URL. Raw, immutable; no flattening in bronze.
+
+**Done when:** one event after 2026-05-16 is queryable in bronze with round-level stats. **Met 2026-10-19:** 5 events (19 Sep → 17 Oct), 12–14 bouts and 46–54 round-stat rows each.
 
 ---
 
-## Sprint 6 — Uge 9 (Mon 26 Oct – Sun 1 Nov) · ~13 h
+### Sprint 6 — Uge 9 (Mon 26 Oct – Sun 1 Nov) · ~13 h
 
-**Goal: scraped data flows into the same silver, incrementally.**
+**Goal: Cito data flows into the same silver, incrementally.**
 
-- [ ] `20_clean_ufcstats` — map the scrape onto the silver contract. UFCStats column names only here.
-- [ ] Refresh fighter profiles (dob, reach, height) from the scraped fighter pages, and add a silver check:
+- [ ] `20_clean_cito` — map the JSON onto the silver contract. Cito field names only here.
+- [ ] Refresh fighter profiles (dob, reach, height) from Cito, if it carries them, and add a silver check:
       profile completeness by debut year. Kaggle left recent fighters' profiles empty (decisions.md 2026-10-11).
 - [ ] Incremental load: Delta `MERGE` on natural keys. Run it twice; the second run changes
       nothing. That is the idempotency test.
-- [ ] Load every event from 2026-05-16 to today.
+- [ ] Load every event from 2026-05-16 to today (as far as the gap decision allows).
 
 **Done when:** `silv_fight` / `silv_round` hold both sources, and a re-run adds zero rows.
 
@@ -158,13 +173,14 @@ the date.**
 
 ---
 
-## Sprint 7 — Uge 10 (Mon 2 – Sun 8 Nov) · ~14 h · **PHASE 2 GATE**
+### Sprint 7 — Uge 10 (Mon 2 – Sun 8 Nov) · ~14 h · **PHASE 2 GATE**
 
 **Goal: the switch is proven end to end.**
 
-- [ ] **Overlap reconciliation:** scrape a few events Kaggle also has; count disagreements per
-      column, explain the top ones. Written up in `docs/data-coverage.md`.
-- [ ] Fighter identity bridged across sources; scraped-only fighters get new `fighter_key`s.
+- [ ] **Overlap reconciliation:** pull a few events Kaggle also has; count disagreements per
+      column, explain the top ones. Written up in `docs/data-coverage.md`. (scarekrow v2 vs Cito on
+      their overlap, ~18 Sep → 10 Oct.)
+- [ ] Fighter identity bridged across sources; Cito-only fighters get new `fighter_key`s.
 - [ ] Gold + Power BI refreshed on the combined data. **List every downstream change that was
       needed** — ideally none. The list is the grade on the silver contract.
 
@@ -173,7 +189,9 @@ cleanly, and the disagreement count is written up.
 
 ---
 
-## Sprint 8 — Uge 11 (Mon 9 – Sun 15 Nov) · ~12 h
+## Phase 3 — Model · gate Sun 29 Nov
+
+### Sprint 8 — Uge 11 (Mon 9 – Sun 15 Nov) · ~12 h
 
 **Goal: ratings.**
 
@@ -187,7 +205,7 @@ date looks plausible to someone who follows the sport.
 
 ---
 
-## Sprint 9 — Uge 12 (Mon 16 – Sun 22 Nov) · ~12 h
+### Sprint 9 — Uge 12 (Mon 16 – Sun 22 Nov) · ~12 h
 
 **Goal: the real model.**
 
@@ -199,7 +217,7 @@ date looks plausible to someone who follows the sport.
 
 ---
 
-## Sprint 10 — Uge 13 (Mon 23 – Sun 29 Nov) · ~14 h · **PHASE 3 GATE**
+### Sprint 10 — Uge 13 (Mon 23 – Sun 29 Nov) · ~14 h · **PHASE 3 GATE**
 
 **Goal: published, with honest numbers.**
 
@@ -225,7 +243,7 @@ When a sprint runs over, cut from the top. Do not improvise a new order mid-spri
 3. SCD2 on `dim_fighter` → SCD1, with the SCD2 design written up but not built
 
 **Phase 2**
-1. Full-history backfill from the scrape → Kaggle stays the history
+1. Full-history backfill from Cito → Kaggle stays the history
 2. Overlap reconciliation → one event instead of several
 3. Scheduled runs → manual re-run of the notebook
 

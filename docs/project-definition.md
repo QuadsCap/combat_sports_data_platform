@@ -32,7 +32,7 @@ Build an end-to-end data platform and forecasting model on **combat sports** fig
 |---|---|---|
 | 0 | Setup | done except ToS check (moved into Sprint 1) |
 | 1 | Platform on Kaggle data → Power BI + baseline | **Sat 17 Oct** |
-| 2 | Source switch: UFCStats scrape, incremental load | **Sun 8 Nov** |
+| 2 | Source switch: Cito API (UFCStats-derived), incremental load | **Sun 8 Nov** |
 | 3 | Model: Elo + logistic, calibrated, published | **Sun 29 Nov** |
 | 4 | Placeholder — products/monetization, zero build | decision at Phase 3 gate |
 
@@ -57,20 +57,20 @@ Build an end-to-end data platform and forecasting model on **combat sports** fig
 
 **Gate:** runs end-to-end by the gate date, or scope gets **cut** — never extended.
 
-### Phase 2 — Source switch (UFCStats scrape)
+### Phase 2 — Source switch (Cito API)
 
 - Look into the possibility of getting other data (Tapology, Bellator, PFL -> Other?)
-- Scraper for UFCStats event → fight → round pages, run from a Fabric notebook, landing `bronze_ufcstats_*`.
-- `20_clean_ufcstats` maps the scrape onto the **same silver contract** as Kaggle.
+- Cito API ingest (event → bout → round), run from a Fabric notebook, landing raw JSON as `bronze_cito_*`. Replaces the own UFCStats scraper, ruled out by the ToS check (decisions.md 2026-09-24, 2026-10-18).
+- `20_clean_cito` maps the API data onto the **same silver contract** as Kaggle.
 - **Incremental load:** new events appended via Delta `MERGE` on natural keys; re-running is idempotent (no duplicates). Late-arriving corrections handled here.
 - **Overlap reconciliation:** events present in both sources compared; disagreements counted and explained.
-- Fighter identity bridged Kaggle ↔ UFCStats (by UFCStats fighter ID if Kaggle carries it; otherwise the Sprint 3 resolution ladder).
-- Gold and Power BI refresh with the scraped data **without changes downstream of silver**. Any change that was needed is listed honestly — that list is the test of the contract.
-- **Open, decided in Sprint 5:** does the scrape backfill full history, or does Kaggle stay the historical source up to 2026-05-16 with the scrape taking over after it?
+- Fighter identity bridged Kaggle ↔ Cito by UFCStats IDs (both carry them; Sprint 3 resolution ladder as fallback).
+- Gold and Power BI refresh with the Cito data **without changes downstream of silver**. Any change that was needed is listed honestly — that list is the test of the contract.
+- Kaggle stays the historical source up to 2026-05-16; Cito takes over after it. **Open, decided in Sprint 5:** how the 16 May → ~18 Sep gap is filled (Cito free reaches back 30 days only).
 
 - Think about SCD2 build here.
 
-**Gate:** gold tables include fights after 2026-05-16 from the scrape, the incremental load re-runs cleanly, and the disagreement count is written up.
+**Gate:** gold tables include fights after 2026-05-16 from Cito, the incremental load re-runs cleanly, and the disagreement count is written up.
 
 ### Phase 3 — Model
 
@@ -79,7 +79,7 @@ Build an end-to-end data platform and forecasting model on **combat sports** fig
 - Logistic regression on rating + contextual features.
 - Calibration curve, Brier score, log loss.
 - Holdout backtest, benchmarked against closing odds.
-- Public timestamped paper prediction log starts the day the model runs (the scraper supplies upcoming cards).
+- Public timestamped paper prediction log starts the day the model runs (the Phase 2 source supplies upcoming cards).
 - **Must beat the Phase 1 baseline**, reported honestly either way.
 
 **Gate:** published — repo public, README tells the story.
@@ -119,7 +119,7 @@ A baseline that is hard to beat is a finding, not a failure. Publish it either w
 ## Data sources
 
 - **Phase 1 — bulk (no scraping):** Kaggle — per-round stats + odds ("UFC Data: Stats & Rankings & Betting Odds"), "UFC Fights 2010–2020 with Betting Odds", daily-updated odds dataset. Free. Coverage as loaded: 8,555 fights, 1994-03-11 → 2026-05-16 (see `decisions.md` 2026-09-24).
-- **Phase 2 — live:** UFCStats round-by-round scrape. Mature OSS scrapers exist (DavesAnalytics Python/R, Scrapy variants). Gives a genuine incremental-load story.
+- **Phase 2 — live:** Cito API, round-by-round, UFCStats-derived with UFCStats IDs (own scraper ruled out by the ToS check, decisions.md 2026-09-24). Gives a genuine incremental-load story.
 - **Residual checks (Emil, minutes):**
   - ☐ verify Kaggle coverage, recency, quality → `docs/data-coverage.md`
   - ☐ eyeball ufcstats.com robots.txt/ToS — Sprint 1, blocking for Phase 2
@@ -142,7 +142,7 @@ Source reliability is a real portfolio topic, not a footnote: Kaggle datasets ar
 
 ### Source-swap readiness — built into Phase 1, because Phase 2 depends on it
 
-The Kaggle → scrape switch must be a new ingest + new cleaning notebook, nothing more. Rules:
+The Kaggle → Cito switch must be a new ingest + new cleaning notebook, nothing more. Rules:
 
 1. **Silver is the contract.** `docs/silver-contract.md` defines `silv_fight`, `silv_round`, `silv_fighter`: our column names, types, grain, natural keys. Nothing source-specific.
 2. **One bronze table set and one cleaning notebook per source:** `10_ingest_kaggle` → `20_clean_kaggle`; later `10_ingest_ufcstats` → `20_clean_ufcstats`. Source-specific column names exist **only** inside that source's cleaning notebook.
@@ -157,7 +157,7 @@ The Kaggle → scrape switch must be a new ingest + new cleaning notebook, nothi
 
 - Betting, bankroll, stake-sizing, selling anything — parked until the Phase 4 decision point.
 - Full CI/CD apparatus (see above).
-- Eventstream / real-time streaming — the Phase 2 scrape is scheduled batch, not streaming.
+- Eventstream / real-time streaming — the Phase 2 load is scheduled batch, not streaming.
 - Second sport, second organisation — **loading** them is parked. The schema accommodates them from day one (see above); Phases 1–3 ingest UFC only.
 - Custom tooling, pipeline automation beyond what Fabric gives natively.
 - Intensive SQL/PySpark/KQL *study tracks* — learning happens inside the build. The one budgeted exception is Power BI, because Phase 1 ends in a report.
