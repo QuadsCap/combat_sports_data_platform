@@ -7,7 +7,7 @@ and types. Nothing downstream of silver reads bronze or knows source column name
 **Rules**
 - Column names are ours, never a source's.
 - Every row carries `source`.
-- Natural keys are UFCStats IDs (parsed from URLs), not names.
+- Natural keys are UFCStats IDs where the source has them, never names. Where it doesn't, the key is the source's own ID with a source prefix (e.g. `cito_13002`), and fighters are mapped to existing UFCStats IDs via `silv_fighter_xref` (Emil, 2026-10-21).
 - Dates are `date`, not `timestamp`.
 - Keys are not enforced by Delta — `20_clean_<source>` checks and counts them (see Checks).
 
@@ -22,7 +22,7 @@ Names below are **proposed silver names** (ours); the bronze source is in bracke
 
 | column  | type  | nullable | description  |
 | -------- | ------ | -------- | ---------------------------------------------------------------------- |
-| fight_id | string | no  | UFCStats fight ID, parsed from `fight_url`  |
+| fight_id | string | no  | Kaggle: UFCStats fight ID, parsed from `fight_url`. Cito: bout `id` prefixed `cito_` |
 | event_id | string | no  | → `silv_event.event_id`; parsed from `event_url` |
 | event_date | date | no | Convenience copy of `silv_event.event_date` (Emil, 2026-10-04) |
 | f1_fighter_id | string | no | Corner 1 → `silv_fighter.fighter_id`; parsed from `f_1_fighter_url` |
@@ -140,7 +140,7 @@ Names below are **proposed silver names** (ours); the bronze source is in bracke
 
 | column  | type  | nullable | description  |
 | ---------- | ------ | -------- | ---------------------------------------------------------------------- |
-| fighter_id | string | no  | UFCStats fighter ID, parsed from `f_1_fighter_url` / `f_2_fighter_url` (both corners stacked, deduplicated) |
+| fighter_id | string | no  | UFCStats fighter ID. Kaggle: parsed from `f_1_fighter_url` / `f_2_fighter_url` (both corners stacked, deduplicated). Cito: looked up in `silv_fighter_xref`; `cito_<uuid>` for fighters with no match (debuts after 16 May) |
 | full_name | string | no | [`f_N_name`] e.g. 'Forrest Griffin' |
 | first_name | string | yes | [`f_N_fighter_f_name`] |
 | last_name | string | yes | [`f_N_fighter_l_name`] |
@@ -152,6 +152,21 @@ Names below are **proposed silver names** (ours); the bronze source is in bracke
 | weight_lbs | double | yes | [`f_N_fighter_weight_lbs`] **current weight only** (0.0 % change per fighter) — not the weight at each fight; use `silv_fight.weight_class` for that |
 | source  | string | no  | Which source produced the row, e.g. `'kaggle'` |
 
+## silv_fighter_xref
+
+**Grain:** one row per source fighter ID
+**Natural key:** `source` + `source_fighter_id`
+*Name and columns proposed by Claude, 2026-10-21; the approach is decided (Emil, same day).*
+
+Crosswalk from a source's own fighter ID to silver `fighter_id`. Built by entity resolution (name/slug match against `silv_fighter`) and extended on each load.
+
+| column  | type  | nullable | description  |
+| ---------- | ------ | -------- | ---------------------------------------------------------------------- |
+| source | string | no | e.g. `'cito'` |
+| source_fighter_id | string | no | The source's ID, e.g. Cito fighter UUID |
+| fighter_id | string | no | → `silv_fighter.fighter_id`: a UFCStats ID when matched, else `cito_<uuid>` |
+| match_method | string | no | How the match was made, e.g. `'exact_name'` / `'fuzzy'` / `'manual'` / `'unmatched'` (feeds the failure log) |
+
 ---
 
 ## Relationships
@@ -160,6 +175,7 @@ Names below are **proposed silver names** (ours); the bronze source is in bracke
 - `silv_round.fight_id` → `silv_fight.fight_id` (one fight, many rounds)
 - `silv_fight.f1_fighter_id` → `silv_fighter.fighter_id`
 - `silv_fight.f2_fighter_id` → `silv_fighter.fighter_id`
+- `silv_fighter_xref.fighter_id` → `silv_fighter.fighter_id` (one fighter, one ID per source)
 
 ## Column allocation (Emil, 2026-10-04 — base names; derivables moved out)
 

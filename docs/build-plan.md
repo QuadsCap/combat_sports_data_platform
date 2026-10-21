@@ -160,7 +160,9 @@ the date.**
 
 **Goal: Cito data flows into the same silver, incrementally.**
 
-- [ ] `20_clean_cito` — map the JSON onto the silver contract. Cito field names only here.
+- [x] `20_clean_cito` — map the JSON onto the silver contract. Cito field names only here.
+      **Done 2026-10-21** (decisions.md): 5 events / 62 fights / 126 rounds / 21 new fighters in silver, 46 checks pass.
+      Writes with `replaceWhere "source = 'cito'"` (full rebuild of Cito rows from all of bronze), not `MERGE` — see below.
 - [ ] Refresh fighter profiles (dob, reach, height) from Cito, if it carries them, and add a silver check:
       profile completeness by debut year. Kaggle left recent fighters' profiles empty (decisions.md 2026-10-11).
 - [ ] Incremental load: Delta `MERGE` on natural keys. Run it twice; the second run changes
