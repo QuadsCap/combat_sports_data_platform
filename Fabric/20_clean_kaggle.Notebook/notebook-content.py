@@ -610,9 +610,8 @@ print("M with Women's:", silv_fight.filter((F.col("gender") == "M") & F.col("wei
 
 # CELL ********************
 
-silv_event.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("silver_layer.dbo.silv_event")
-silv_fight.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("silver_layer.dbo.silv_fight")
-
+silv_event.write.format("delta").mode("overwrite").option("replaceWhere", "source = 'kaggle'").saveAsTable("silver_layer.dbo.silv_event")
+silv_event.write.format("delta").mode("overwrite").option("replaceWhere", "source = 'kaggle'").saveAsTable("silver_layer.dbo.silv_event")
 print(spark.read.table("silver_layer.dbo.silv_event").count(), "/", spark.read.table("silver_layer.dbo.silv_fight").count())
 
 # METADATA ********************
@@ -748,7 +747,7 @@ bronze = spark.read.table("bronze_layer.dbo.bronze_kaggle_full_data_silver_plus"
 
 # CELL ********************
 
-silv_round.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("silver_layer.dbo.silv_round")
+silv_event.write.format("delta").mode("overwrite").option("replaceWhere", "source = 'kaggle'").saveAsTable("silver_layer.dbo.silv_event")
 print(spark.read.table("silver_layer.dbo.silv_round").count(), "rounds written")
 
 # METADATA ********************
@@ -974,7 +973,7 @@ print("dob cast lost values:", fighters.filter(F.col("dob").isNotNull()).select(
      .show(truncate=False))
 
 # --- Write ---
-silv_fighter.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("silver_layer.dbo.silv_fighter")
+silv_event.write.format("delta").mode("overwrite").option("replaceWhere", "source = 'kaggle'").saveAsTable("silver_layer.dbo.silv_event")
 print(spark.read.table("silver_layer.dbo.silv_fighter").count(), "fighters written")
 
 # METADATA ********************

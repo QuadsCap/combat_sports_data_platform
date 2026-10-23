@@ -22,7 +22,7 @@
 
 # MARKDOWN ********************
 
-# ## 11_explore_cito — Cito API exploration (free tier)
+# ## 10_explore_cito — Cito API exploration (free tier)
 # 
 # Explores the Cito API on one recent event before any ingest is built: response shape, IDs, calls per event, and which fields exist. Its findings shape `10_ingest_cito` and the mapping in `20_clean_cito`.
 # 
