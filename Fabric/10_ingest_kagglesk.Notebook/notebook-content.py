@@ -298,102 +298,122 @@ display(old_only.limit(100))
 
 # CELL ********************
 
-# Compares all shared columns for fights that occur exactly once in each table. It first summarises the number of differences per column, then displays individual mismatched records.
-# Exclude ingestion metadata and the fight URL join key from value comparisons
+# =====================================================================
+# Value comparison: jerzyszocik (old) vs kagglesk (new), shared fights
+# ---------------------------------------------------------------------
+# What:   counts per column how many fights differ, on fights where both
+#         sources put the same fighter in the f1 corner.
+# How:    each column is compared by the OLD table's type, because old is
+#         typed (parquet) and new is all strings (CSV):
+#           numeric -> both cast to double, equal within 0.01
+#           other   -> text cleaned (whitespace incl. line breaks collapsed,
+#                      trimmed, lowercased, '' treated as null)
+# Expect: most columns 0; what stays high is a real difference.
+# =====================================================================
+
+from pyspark.sql import functions as F
+from pyspark.sql.types import NumericType
+
 METADATA_COLUMNS = {"_ingested_at", "_source_file", "_load_id"}
 
-shared_columns = sorted(
-    (set(old_df.columns) & set(new_df.columns))
-    - METADATA_COLUMNS
-    - {"fight_url"}
+# Career stats + record are snapshots from the scrape date, refreshed by the
+# July re-scrape -> they differ for every active fighter, so they say nothing about format
+SNAPSHOT_SUFFIXES = (
+    "_fighter_SApM", "_SlpM", "_Str_Acc", "_Str_Def",
+    "_TD_Avg", "_TD_Acc", "_TD_Def", "_Sub_Avg",
+    "_fighter_w", "_fighter_l", "_fighter_d", "_fighter_nc_dq",
 )
 
-print(f"Shared columns to compare: {len(shared_columns)}")
-print(shared_columns)
+shared_columns = sorted(
+    (set(old_df.columns) & set(new_df.columns)) - METADATA_COLUMNS - {"fight_url"}
+)
+compare_columns = [c for c in shared_columns if not c.endswith(SNAPSHOT_SUFFIXES)]
 
-# Keep only fight URLs occurring exactly once, avoiding duplicate-driven join multiplication
+
 def unique_fights(df):
+    # Keep only fight_urls that occur once, so the join can't multiply rows
     unique_urls = (
         df.filter(F.col("fight_url").isNotNull())
-        .groupBy("fight_url")
-        .count()
+        .groupBy("fight_url").count()
         .filter(F.col("count") == 1)
         .select("fight_url")
     )
     return df.join(unique_urls, on="fight_url", how="inner")
 
-old_unique = unique_fights(old_df).alias("old")
-new_unique = unique_fights(new_df).alias("new")
 
-# Match the same fights across both datasets
-joined = old_unique.join(new_unique, on="fight_url", how="inner")
+# f1/f2 are randomised independently per source: only compare fights where
+# f1 is the same fighter in both, otherwise f_1_* vs f_1_* compares two people
+joined = (
+    unique_fights(old_df).alias("old")
+    .join(unique_fights(new_df).alias("new"), on="fight_url", how="inner")
+    .filter(F.col("old.f_1_fighter_url").eqNullSafe(F.col("new.f_1_fighter_url")))
+)
+print(f"Fights with matching f1 corners: {joined.count()}")
 
-print(f"Unambiguous matching fights: {joined.count()}")
 
-# Count mismatched values in each shared column, treating two nulls as equal
-mismatch_counts = []
+def clean_text(col):
+    # F.trim only strips spaces, not \n -> collapse every whitespace run to one space first.
+    # SQL: NULLIF(LOWER(TRIM(REGEXP_REPLACE(col, '\s+', ' '))), '')
+    cleaned = F.lower(F.trim(F.regexp_replace(col.cast("string"), r"\s+", " ")))
+    return F.when(cleaned != "", cleaned)   # no otherwise -> '' becomes null
 
-for col_name in shared_columns:
-    mismatch = ~F.col(f"old.`{col_name}`").eqNullSafe(F.col(f"new.`{col_name}`"))
-    mismatch_counts.append(
-        F.sum(F.when(mismatch, 1).otherwise(0)).alias(col_name)
+
+def mismatch_expr(c):
+    """True when old and new differ for column c (two nulls count as equal)."""
+    old_col = F.col(f"old.`{c}`")
+    new_col = F.col(f"new.`{c}`")
+
+    if isinstance(old_df.schema[c].dataType, NumericType):
+        o = old_col.cast("double")
+        n = F.trim(new_col).cast("double")   # unparseable text -> null -> shows as mismatch
+        same = (o.isNull() & n.isNull()) | F.coalesce(F.abs(o - n) <= 0.01, F.lit(False))
+        return ~same
+
+    return ~clean_text(old_col).eqNullSafe(clean_text(new_col))
+
+
+mismatch = {c: mismatch_expr(c) for c in compare_columns}
+
+# --- Mismatches per column, highest first -----------------------------
+# One row with a count per column, then turned into one row per column (an unpivot)
+counts_row = joined.agg(*[
+    F.sum(F.when(mismatch[c], 1).otherwise(0)).alias(c) for c in compare_columns
+])
+mismatch_summary = (
+    counts_row.select(F.explode(F.array(*[
+        F.struct(F.lit(c).alias("column"), F.col(f"`{c}`").alias("mismatch_count"))
+        for c in compare_columns
+    ])).alias("r"))
+    .select("r.*")
+    .filter("mismatch_count > 0")
+    .orderBy(F.desc("mismatch_count"))
+)
+display(mismatch_summary)
+
+# --- Which columns differ, per fight -----------------------------------
+mismatched_fights = (
+    joined
+    .withColumn(
+        "mismatched_columns",
+        F.filter(F.array(*[F.when(mismatch[c], F.lit(c)) for c in compare_columns]),
+                 lambda x: x.isNotNull()),
     )
+    .filter(F.size("mismatched_columns") > 0)
+)
+print(f"Fights with at least one mismatch: {mismatched_fights.count()}")
 
-if mismatch_counts:
-    # Convert the summary into one row per column and sort by mismatch count
-    mismatch_summary = joined.agg(*mismatch_counts)
+# --- Three examples per suspect column ---------------------------------
+SUSPECT_COLUMNS = ["f_1_ctrl_time_sec", "f_1_r1_ctrl", "f_1_ko_odds",
+                   "f_1_sub_odds", "f_1_ranking", "result", "title_fight"]
 
-    mismatch_summary = mismatch_summary.select(
-        F.explode(
-            F.array(*[
-                F.struct(
-                    F.lit(c).alias("column"),
-                    F.col(c).alias("mismatch_count")
-                )
-                for c in shared_columns
-            ])
-        ).alias("result")
-    ).select("result.*").orderBy(F.desc("mismatch_count"))
-
-    print("=== MISMATCHES BY COLUMN ===")
-    display(mismatch_summary)
-
-    # Identify the exact columns that differ for each fight
-    mismatch_flags = [
-        F.when(
-            ~F.col(f"old.`{c}`").eqNullSafe(F.col(f"new.`{c}`")),
-            F.lit(c)
-        )
-        for c in shared_columns
-    ]
-
-    mismatched_fights = (
-        joined
-        .withColumn(
-            "mismatched_columns",
-            F.filter(F.array(*mismatch_flags), lambda x: x.isNotNull())
-        )
-        .filter(F.size("mismatched_columns") > 0)
-    )
-
-    print(f"Fights with at least one mismatch: {mismatched_fights.count()}")
-
-    # Show old and new values side by side for detailed investigation
-    comparison_columns = [
-        expr
-        for c in shared_columns
-        for expr in (
-            F.col(f"old.`{c}`").alias(f"old_{c}"),
-            F.col(f"new.`{c}`").alias(f"new_{c}")
-        )
-    ]
-
+for c in [c for c in SUSPECT_COLUMNS if c in compare_columns]:
+    print(f"=== {c} ===")
     display(
-        mismatched_fights.select(
-            "fight_url",
-            "mismatched_columns",
-            *comparison_columns
-        ).limit(100)
+        joined.filter(mismatch[c])
+        .select("fight_url",
+                F.col(f"old.`{c}`").alias(f"old_{c}"),
+                F.col(f"new.`{c}`").alias(f"new_{c}"))
+        .limit(3)
     )
 
 # METADATA ********************

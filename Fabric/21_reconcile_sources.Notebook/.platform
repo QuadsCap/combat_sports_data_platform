@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "21_reconcile_sources"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "d3ddce93-93fc-85f1-4856-2e23f59d8e71"
+  }
+}

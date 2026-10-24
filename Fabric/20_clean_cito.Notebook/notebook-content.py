@@ -626,8 +626,11 @@ problems["duplicate fight_id"] = silv_fight_cito.count() - silv_fight_cito.selec
 problems["duplicate fight_id + round"] = silv_round_cito.count() - silv_round_cito.select("fight_id", "round").distinct().count()
 # The same event from two sources would be two rows with one key.
 # left_semi = keep rows that HAVE a match. SQL: WHERE EXISTS (...)
-problems["event_id already in silver from another source"] = (silv_event_cito
+# Overlap with other sources is kept on purpose (decisions.md 2026-10-22): gold keeps one per fight.
+# So this is reported, not a problem that blocks the write.
+overlap_events = (silv_event_cito
     .join(spark.read.table(S + "silv_event").filter("source != 'cito'"), "event_id", "left_semi").count())
+print("events also in silver from another source (overlap, expected 4-5):", overlap_events)
 
 # --- References: every ID points at something that exists ---------------------
 # Fighters silver will contain after the write: the other sources' + Cito's new ones
