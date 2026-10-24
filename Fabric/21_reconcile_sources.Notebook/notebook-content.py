@@ -192,3 +192,18 @@ display(spark.sql("""
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+#Test if all data is as it should be: It shows the counts and the last write for every table in one go
+for t in ["silv_event", "silv_fight", "silv_round", "silv_fighter"]:
+    print(t)
+    spark.read.table("silver_layer.dbo." + t).groupBy("source").count().show()
+    spark.sql(f"DESCRIBE HISTORY silver_layer.dbo.{t}").select("timestamp", "operation").show(3, truncate=False)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

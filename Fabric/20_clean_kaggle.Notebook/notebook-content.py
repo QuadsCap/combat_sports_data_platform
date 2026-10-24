@@ -978,8 +978,7 @@ print("dob cast lost values:", fighters.filter(F.col("dob").isNotNull()).select(
      .show(truncate=False))
 
 # --- Write ---
-silv_event.write.format("delta").mode("overwrite").option("replaceWhere", "source = 'kaggle'").saveAsTable("silver_layer.dbo.silv_event")
-print(spark.read.table("silver_layer.dbo.silv_fighter").count(), "fighters written")
+silv_fighter.write.format("delta").mode("overwrite").option("replaceWhere", "source = 'kaggle'").saveAsTable("silver_layer.dbo.silv_fighter")
 
 # METADATA ********************
 

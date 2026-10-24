@@ -352,7 +352,8 @@ fight = (fight.withColumn("method",
     .withColumn("outcome",
         F.when((win == F.col("f1_name")) | (win == F.col("f2_name")), "win")
         .when((win.isNull() | (win == "No Contest")) & (F.col("method") == "Decision"), "draw")
-        .when((win.isNull() | (win == "No Contest")) & (F.col("method") == "Could Not Continue"), "no_contest"))
+        .when((win.isNull() | (win == "No Contest")) & (F.col("method") == "Could Not Continue"), "no_contest")
+        .otherwise("UNMAPPED"))
 
 
     # winner_fighter_id: name match within the row -> that corner's id
