@@ -105,7 +105,7 @@ The dataset supports `fact_round`: 99.75 % of fights have round-level stats, fig
 
 # Part 2 — Phase 2 sources and the overlap reconciliation
 
-*Checked 2026-10-22 → 24 in the kagglesk exploration notebook (bronze; Fabric name `10_explore_kagglev2`, not yet in the repo) and `21_reconcile_sources` (silver). Details and dates per finding in `decisions.md`.*
+*Checked 2026-10-22 → 24 in a kagglesk exploration notebook (bronze; deleted since — its results are recorded here and in `decisions.md`) and `21_reconcile_sources` (silver). Details and dates per finding in `decisions.md`.*
 
 Phase 2 replaces the static Kaggle load with a live source (Cito API) and fills the gap in between from a second Kaggle dataset. Three sources now feed the same silver tables, each tagged by `source`:
 
