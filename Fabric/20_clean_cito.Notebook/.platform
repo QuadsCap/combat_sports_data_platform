@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Notebook",
+    "displayName": "20_clean_cito"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "5efe1016-6dc6-84ac-4392-b5b396103902"
+  }
+}

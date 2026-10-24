@@ -33,20 +33,6 @@
 
 # CELL ********************
 
-#We connect to the key, after importing it into the secrets officer/member vault in Fabric (https://combat-sports-vang-v1.vault.azure.net/) and setting permissions.
-key = notebookutils.credentials.getSecret("https://combat-sports-vang-v1.vault.azure.net/", "cito-api-key")
-print(len(key))
-
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
 import json, re, requests, time, datetime
 
 # Retrieve the API key securely from Azure Key Vault.
@@ -191,64 +177,6 @@ print(*slugs, sep="\n")
 
 # CELL ********************
 
-# Extend the existing bronze schema with event-specific metadata.
-# Reuse the original fields and add the event slug and event date.
-stats_schema = StructType(bronze_schema.fields + [
-    StructField("event_slug", StringType(), True),
-    StructField("event_date", StringType(), True)
-])
-
-# Collect all API responses in memory so they can be written in one batch.
-rows = []
-
-# Request statistics for each event that passed the filter.
-for event in filtered_events:
-    event_slug = event["slug"]
-    event_date = str(event.get("date", ""))
-
-    # Build the statistics endpoint for this event and capture the full response.
-    path = f"/ufc/events/{event_slug}/stats"
-    r_ev = call(path)
-
-    # Store the original response body and metadata, including HTTP errors.
-    # The two extra fields identify which event the response belongs to.
-    rows.append((
-        ingest_ts,
-        "cito",
-        path,
-        r_ev.url,
-        r_ev.status_code,
-        r_ev.text,
-        event_slug,
-        event_date
-    ))
-
-    # Pause between requests to reduce the risk of exceeding API rate limits.
-    time.sleep(7)
-
-# Create one Spark DataFrame from all collected responses and append it to bronze.
-if rows:
-    (spark.createDataFrame(rows, stats_schema)
-        .write.mode("append")
-        .saveAsTable("bronze_layer.dbo.bronze_cito_event_stats"))
-
-# Read back the latest records to verify the event identifiers, HTTP statuses
-# and response payload sizes.
-display(spark.sql("""
-    SELECT ingest_ts, event_slug, http_status, length(payload) AS payload_chars
-    FROM bronze_layer.dbo.bronze_cito_event_stats
-    ORDER BY ingest_ts DESC
-"""))
-
-# METADATA ********************
-
-# META {
-# META   "language": "python",
-# META   "language_group": "synapse_pyspark"
-# META }
-
-# CELL ********************
-
 from pyspark.sql.types import (StructType, StructField, StringType, IntegerType, TimestampType)
 
 # Extend the existing bronze schema with event-specific metadata.
@@ -316,6 +244,50 @@ display(spark.sql("""
     FROM bronze_layer.dbo.bronze_cito_event_stats
     GROUP BY ingest_ts ORDER BY ingest_ts
 """))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+for row in spark.table("bronze_layer.dbo.bronze_cito_event_stats").orderBy("ingest_ts", "event_slug").collect():
+    d = json.loads(row.payload)["data"]
+    print(row.ingest_ts, row.event_slug, row.event_date, "|", len(d["bouts"]), "bouts |", len(d["roundStats"]), "round-stat rows")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# Read the registered Delta table created by saveAsTable.
+df1 = spark.read.table("bronze_layer.dbo.bronze_cito_event_stats")
+
+# Display the rows.
+display(df1)
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+from pyspark.sql import functions as F
+
+raw = spark.read.table("bronze_cito_event_stats")
+one = raw.select("payload").limit(1)
+schema_df = spark.read.json(one.rdd.map(lambda r: r.payload))
+schema_df.printSchema()
 
 # METADATA ********************
 
