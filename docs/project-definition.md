@@ -32,7 +32,7 @@ Build an end-to-end data platform and forecasting model on **combat sports** fig
 |---|---|---|
 | 0 | Setup | done except ToS check (moved into Sprint 1) |
 | 1 | Platform on Kaggle data → Power BI + baseline | **Sat 17 Oct** |
-| 2 | Source switch: Cito API (UFCStats-derived), incremental load | **Sun 8 Nov** |
+| 2 | Source switch: Cito API (UFCStats-derived), incremental load | **Wed 4 Nov** |
 | 3 | Model: Elo + logistic, calibrated, published | **Sun 29 Nov** |
 | 4 | Placeholder — products/monetization, zero build | decision at Phase 3 gate |
 

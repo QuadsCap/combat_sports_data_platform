@@ -10,7 +10,7 @@
 
 ## Confirmed
 
-**Gate dates: Phase 1 = Sat 17 Oct · Phase 2 (source switch) = Sun 8 Nov · Phase 3 (model) = Sun 29 Nov.**
+**Gate dates: Phase 1 = Sat 17 Oct · Phase 2 (source switch) = Wed 4 Nov · Phase 3 (model) = Sun 29 Nov.**
 **Committed capacity: 15 h/week — 3 h x 5 weekdays.** Weekends free.
 
 Capacity confirmed 2026-09-20. Phase order and the 29 Nov model gate confirmed 2026-09-24: the
@@ -130,10 +130,9 @@ the date.**
 
 ---
 
-## Phase 2 — Source switch · gate Sun 8 Nov · **in progress from 19 Oct**
+## Phase 2 — Source switch · gate Wed 4 Nov · **in progress from 19 Oct**
 
-> **Own target: Wed 4 Nov** (WoW playable from the 5th; decisions.md 2026-10-18). The gate stays
-> 8 Nov; 5–8 Nov is buffer.
+> **Gate: Wed 4 Nov** (decisions.md 2026-10-24). No buffer after it — 5–8 Nov is not build time.
 
 > **Source: Cito API** (decisions.md 2026-10-18), replacing the own UFCStats scraper the ToS check
 > ruled out. Cito event IDs = UFCStats IDs, so fights and fighters join to Kaggle without name matching.
@@ -145,7 +144,7 @@ the date.**
 - [x] **Decide the Phase 2 source** → Cito API (decisions.md 2026-10-18).
 - [x] API key out of the notebook (Key Vault `combat-sports-vang-v1`, verified 2026-10-18): Fabric Git sync commits notebook source, so a key typed in a
       cell lands on GitHub.
-- [x] Explore the free tier on one recent event (`10_explore_cito`, decisions.md 2026-10-18): response shape, IDs, calls per event, and whether
+- [x] Explore the free tier on one recent event (`11_explore_cito`, decisions.md 2026-10-18): response shape, IDs, calls per event, and whether
       Cito carries odds, judge scores and fighter profiles (dob, reach, height).
 - [x] Gap 16 May → ~18 Sep: filled from Kaggle scarekrow v2, not Cito Pro (decisions.md 2026-10-18).
       Its own `10_ingest` / `20_clean` pair, after the Cito path works.
@@ -165,28 +164,32 @@ the date.**
       Writes with `replaceWhere "source = 'cito'"` (full rebuild of Cito rows from all of bronze), not `MERGE` — see below.
 - [ ] Refresh fighter profiles (dob, reach, height) from Cito, if it carries them, and add a silver check:
       profile completeness by debut year. Kaggle left recent fighters' profiles empty (decisions.md 2026-10-11).
+      **Mostly moot since 2026-10-24:** every Cito fighter now resolves to a Kaggle/kagglesk fighter that carries a profile; only the completeness check is left.
 - [ ] Incremental load: Delta `MERGE` on natural keys. Run it twice; the second run changes
       nothing. That is the idempotency test.
-- [ ] Load every event from 2026-05-16 to today (as far as the gap decision allows).
+- [x] Load every event from 2026-05-16 to today (as far as the gap decision allows).
+      **Done 2026-10-24:** gap 16 May → 17 Oct from kagglesk (`10_ingest_kagglesk` / `20_clean_kagglesk`, 249 fights); Cito through 17 Oct, no newer card with stats yet — each `10_ingest_cito` run picks up new events.
 
-**Done when:** `silv_fight` / `silv_round` hold both sources, and a re-run adds zero rows.
+**Done when:** `silv_fight` / `silv_round` hold both sources, and a re-run adds zero rows. **Met 2026-10-24** with three sources; every `20_clean_*` writes via `replaceWhere` on its own `source`, so re-runs leave counts unchanged (verified per table + `DESCRIBE HISTORY`).
 
 **Concept this sprint:** watermarks, idempotent loads, and why `MERGE` beats append.
 
 ---
 
-### Sprint 7 — Uge 10 (Mon 2 – Sun 8 Nov) · ~14 h · **PHASE 2 GATE**
+### Sprint 7 — Uge 10 (Mon 2 – Wed 4 Nov) · **PHASE 2 GATE**
 
 **Goal: the switch is proven end to end.**
 
-- [ ] **Overlap reconciliation:** pull a few events Kaggle also has; count disagreements per
+- [x] **Overlap reconciliation:** pull a few events Kaggle also has; count disagreements per
       column, explain the top ones. Written up in `docs/data-coverage.md`. (scarekrow v2 vs Cito on
       their overlap, ~18 Sep → 10 Oct.)
-- [ ] Fighter identity bridged across sources; Cito-only fighters get new `fighter_key`s.
+      **Done 2026-10-24** (`21_reconcile_sources`): 5 events, 62/62 fights matched, 1 fight missing in Cito, 0 disagreements on 11 fight columns after fixing a draw/NC mapping bug the check found.
+- [x] Fighter identity bridged across sources; Cito-only fighters get new `fighter_key`s.
+      **Done 2026-10-24** by run order (Kaggle → kagglesk → Cito): all 124 Cito fighters resolve to UFCStats IDs, 0 Cito-only fighters; confirmed by the reconciliation.
 - [ ] Gold + Power BI refreshed on the combined data. **List every downstream change that was
       needed** — ideally none. The list is the grade on the silver contract.
 
-**Done when — Sun 8 Nov:** the report shows fights after 2026-05-16, the incremental load re-runs
+**Done when — Wed 4 Nov:** the report shows fights after 2026-05-16, the incremental load re-runs
 cleanly, and the disagreement count is written up.
 
 ---

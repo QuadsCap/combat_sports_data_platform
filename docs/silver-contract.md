@@ -242,7 +242,7 @@ fighter attributes (weight = current only).
 - [x] [fact] `odds_legacy` = decimal winner odds, filled on legacy + bfo rows (6,660 fights). `bfo_best_decimal` = best price across books, not closing. Odds timing (open/close) unknown → README limitation.
 - [ ] Sourcing more odds data (BestFightOdds etc.) and a non-winner baseline: parked — Richer odds markets, reconsider 29 Nov.
 
-### Column checks (run in `11_profile_kaggle`)
+### Column checks (run in `11_explore_kaggle`)
 
 One row per bronze column (or group) that needs looking at before it is allocated. Names are the real
 bronze names; `a` … `b` (n) means n columns from `a` to `b` — every one is listed in the inventory below. Most checks are a

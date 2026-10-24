@@ -14,7 +14,7 @@ Kaggle file ──► bronze ──► silver ──► gold (star schema) ─�
 | Phase | What | Status |
 |---|---|---|
 | **1** | Platform on Kaggle data → Power BI + baseline model | **Built** (gate Sat 17 Oct 2026) |
-| 2 | Second source loaded incrementally into the same silver contract — same gold, same report, no downstream edits | Gate Sun 8 Nov |
+| 2 | Second source loaded incrementally into the same silver contract — same gold, same report, no downstream edits | Gate Wed 4 Nov |
 | 3 | Real model: rating system + logistic regression, scored on calibration, benchmarked against closing odds | Gate Sun 29 Nov |
 
 ## Phase 1 in numbers
