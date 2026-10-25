@@ -282,6 +282,64 @@ display(df1)
 
 # CELL ********************
 
+# =====================================================================
+# Run check — API budget, and what this run landed per event
+# ---------------------------------------------------------------------
+# What:   (1) Cito's own rate-limit headers from the last call,
+#         (2) calls per month from bronze (every call = one bronze row),
+#         (3) per event in this run: bouts, rounds, and the fight list
+#             to compare with the event page on ufcstats.com (by hand).
+# Expect: calls well under 500; rounds_from_stats = rounds_from_results;
+#         bout count and fights equal to ufcstats.com
+# =====================================================================
+
+from pyspark.sql import functions as F
+
+# --- (1) Cito's counters --------------------------------------------------------
+# Whatever X-RateLimit-* headers Cito sends. If one is monthly, it is the
+# authoritative count; the bronze count below misses calls not logged in bronze.
+last = r_ev if rows else r
+print({k: v for k, v in last.headers.items() if "ratelimit" in k.lower()})
+print("calls this run:", len(calls))
+
+# --- (2) Calls per month, from bronze -------------------------------------------
+# Not in bronze, so add by hand: 11_explore_cito (8 calls, 18 Oct) and the
+# test-load rows deleted on 19 Oct.
+display(spark.sql("""
+    SELECT date_format(ingest_ts, 'yyyy-MM') AS month, count(*) AS calls
+    FROM (SELECT ingest_ts FROM bronze_layer.dbo.bronze_cito_events
+          UNION ALL
+          SELECT ingest_ts FROM bronze_layer.dbo.bronze_cito_event_stats)
+    GROUP BY 1 ORDER BY 1
+"""))
+
+# --- (3) This run, per event ----------------------------------------------------
+# rounds_from_stats:   round-stat rows / 2 (one row per fighter per round)
+# rounds_from_results: sum of resultRound over the bouts = rounds actually fought
+# The two should match; ufcstats.com's event page gives the same numbers
+# (count the fights; add up the Round column).
+for row in (spark.table("bronze_layer.dbo.bronze_cito_event_stats")
+            .filter(F.col("ingest_ts") == ingest_ts).orderBy("event_date").collect()):
+    if row.http_status != 200:
+        print(row.event_slug, "HTTP", row.http_status); continue
+    bouts = [b for b in json.loads(row.payload)["data"]["bouts"] if not b.get("isCancelled")]
+    stats_rows = sum(len(b.get("roundStats") or []) for b in bouts)
+    print(f"\n{row.event_date}  {row.event_slug}  bouts: {len(bouts)}"
+          f"  rounds_from_stats: {stats_rows / 2:g}"
+          f"  rounds_from_results: {sum(int(b.get('resultRound') or 0) for b in bouts)}")
+    for b in bouts:
+        names = " vs ".join(f["fighterName"] for f in b["fighters"])
+        print(f"   R{b.get('resultRound')}  {names}")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 from pyspark.sql import functions as F
 
 raw = spark.read.table("bronze_cito_event_stats")

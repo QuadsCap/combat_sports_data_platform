@@ -43,9 +43,19 @@
 
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
+import datetime
+
+# --- Load scope ------------------------------------------------------------------
+# Incremental: only events that can have changed since the last load are processed.
+# Cito's free tier re-sends the last 30 days on every call, so only events inside
+# that window can get a new snapshot (late stats, corrections). Older events are final.
+# None = full refresh: every event in bronze. Use it after a MANUAL_MAP / NAME_FIX
+# change, or when cell 9 says "FULL REFRESH NEEDED".
+LOOKBACK_DAYS = 35   # 30-day API window + 5 days margin
 
 # Read the bronze table containing historical API responses.
-bronze = spark.read.table("bronze_cito_event_stats")
+# Error responses (429, 500 ...) have no data: a failed call must not replace a good snapshot.
+bronze = spark.read.table("bronze_cito_event_stats").filter("http_status = 200")
 
 # Keep only the latest API response for each event.
 w = Window.partitionBy("event_slug").orderBy(F.col("ingest_ts").desc())
@@ -54,8 +64,29 @@ latest = (bronze
     .filter(F.col("rn") == 1)
     .drop("rn"))
 
-# Infer the JSON structure from the payload strings.
-payload_schema = spark.read.json(latest.rdd.map(lambda r: r.payload)).schema
+if LOOKBACK_DAYS is not None:
+    # Anchor on the last ingest, not on today: rerunning tomorrow gives the same scope.
+    last_ingest = bronze.agg(F.max(F.to_date("ingest_ts"))).first()[0]
+    cutoff = last_ingest - datetime.timedelta(days=LOOKBACK_DAYS)
+    # Events silver doesn't have yet are always in scope (catch-up after a missed run).
+    in_silver = (spark.read.table("silver_layer.dbo.silv_event")
+                 .filter("source = 'cito'").select("event_id"))
+    latest = (latest
+        .withColumn("event_id", F.get_json_object("payload", "$.data.event.dataId"))
+        .join(in_silver.withColumn("in_silver", F.lit(True)), "event_id", "left")
+        # SQL: WHERE event_date >= cutoff OR in_silver IS NULL
+        .filter((F.to_date(F.substring("event_date", 1, 10)) >= F.lit(cutoff))
+                | F.col("in_silver").isNull())
+        .drop("event_id", "in_silver"))
+    print(f"incremental: events since {cutoff} (last ingest {last_ingest} - {LOOKBACK_DAYS} days) + events not yet in silver")
+else:
+    print("full refresh: every event in bronze")
+print("events in scope:", latest.count())
+
+# Infer the JSON structure from ALL successful payloads, not just the ones in scope:
+# a field that happens to be absent from 2 events would otherwise vanish from the
+# schema and break the cells that read it.
+payload_schema = spark.read.json(bronze.rdd.map(lambda r: r.payload)).schema
 
 # Parse the raw JSON string into a structured Spark column.
 parsed = latest.withColumn("p", F.from_json("payload", payload_schema))
@@ -68,7 +99,6 @@ display(parsed.select(
     "p.data.event.eventDate",
     "p.meta.roundStatRows"
 ).limit(5))
-
 
 # METADATA ********************
 
@@ -593,7 +623,7 @@ print("silv_round rows:", silv_round_cito.count(),
 # What:   (1) lines each Cito table up with the existing silver table: same columns,
 #         same order, same types; contract columns Cito lacks become typed nulls.
 #         (2) runs the key, reference and not-null checks, (3) prints the fault list.
-# Why:    replaceWhere (cell 9) writes into tables Kaggle already fills, so the
+# Why:    the MERGE (cell 9) writes into tables Kaggle already fills, so the
 #         shape must match exactly. And nothing gets written before the checks pass.
 # Reads:  the cito tables from cells 5–7, the silver tables
 # Makes:  final silv_*_cito tables; a printed OK/FAIL list
@@ -670,6 +700,107 @@ print("events:", silv_event_cito.count(), " fights:", silv_fight_cito.count(),
 # CELL ********************
 
 # =====================================================================
+# CELL 9 — MERGE Cito's rows into silver, then read them back
+# ---------------------------------------------------------------------
+# What:   one MERGE per silver table, on its natural key, for the events in scope (cell 1):
+#           new key                           -> INSERT
+#           same key, some value changed      -> UPDATE (Cito corrected / late stats)
+#           same key, every value identical   -> nothing (no rewrite)
+#           in silver, gone from the snapshot -> DELETE, only inside the events in scope
+#         Rows of other sources are never touched: every ON and DELETE also says source = 'cito'.
+# Why:    Cito re-sends the same events on every load. MERGE writes only what changed,
+#         so a rerun right after prints "no change" on every table. That is the idempotency test.
+# Expect: after new data: a few inserts/updates; immediate rerun: "no change" x 5
+# =====================================================================
+
+from delta.tables import DeltaTable
+
+# Stops Run all here if any check in cells 4–8 failed: nothing gets written
+assert all(v == 0 for v in problems.values()), "Checks failed - see the FAIL lines in cell 8; nothing written"
+
+# --- Delete scope ----------------------------------------------------------------
+# Only rows belonging to events we just re-read may be deleted. An event outside the
+# scope was not looked at, so its absence from the source means nothing.
+scope_events = [r.event_id for r in silv_event_cito.select("event_id").collect()]
+# Fights of those events: the ones silver has now + the ones in the new snapshot.
+# Read BEFORE the fight MERGE, or a deleted fight's rounds would be out of scope.
+scope_fights = [r.fight_id for r in (spark.read.table(S + "silv_fight")
+    .filter(F.col("source") == "cito").filter(F.col("event_id").isin(scope_events))
+    .select("fight_id").union(silv_fight_cito.select("fight_id")).distinct().collect())]
+
+def in_list(col, values):
+    # SQL text for "col IN ('a', 'b')"; FALSE when the list is empty (deletes nothing)
+    return f"t.{col} IN ({', '.join(repr(v) for v in values)})" if values else "FALSE"
+
+def merge_cito(df, table, keys, delete_scope=None):
+    if not spark.catalog.tableExists(table):          # first run of a new table: plain create
+        df.write.format("delta").saveAsTable(table)
+        print(f"{table:40s} created"); return
+    tgt = DeltaTable.forName(spark, table)
+    v_before = tgt.history(1).first()["version"]      # latest version before this MERGE
+    # ON: natural key + source. Kagglesk has the same event_id for overlap events;
+    # without the source condition the MERGE would update Kaggle's row.
+    on = " AND ".join(f"t.`{k}` = s.`{k}`" for k in keys) + " AND t.source = 'cito'"
+    # "Something changed" = any non-key column differs. <=> is null-safe equality:
+    # NULL <=> NULL is true, so a null that stays null doesn't count as a change.
+    # SQL Server: NOT (t.x = s.x OR (t.x IS NULL AND s.x IS NULL))
+    changed = " OR ".join(f"NOT (t.`{c}` <=> s.`{c}`)" for c in df.columns if c not in keys)
+    m = (tgt.alias("t")
+         .merge(df.alias("s"), on)
+         .whenMatchedUpdateAll(condition=changed)     # matched + identical -> no update at all
+         .whenNotMatchedInsertAll())
+    if delete_scope:
+        # SQL Server: WHEN NOT MATCHED BY SOURCE AND ... THEN DELETE
+        m = m.whenNotMatchedBySourceDelete(condition=f"t.source = 'cito' AND {delete_scope}")
+    m.execute()
+    # Nothing to change -> Delta writes no new version, and history(1) would show the
+    # PREVIOUS write's metrics (that fooled us on 25 Oct). So compare versions first.
+    h = tgt.history(1).first()
+    if h["version"] == v_before:
+        print(f"{table:40s} no change"); return
+    om = h["operationMetrics"]
+    print(f"{table:40s} v{h['version']}  inserted {om.get('numTargetRowsInserted')}"
+          f"  updated {om.get('numTargetRowsUpdated')}  deleted {om.get('numTargetRowsDeleted')}")
+
+# Order: fighters before fights, fights before rounds (parents before children)
+merge_cito(silv_fighter_xref, S + "silv_fighter_xref", ["source_fighter_id"])
+merge_cito(silv_fighter_cito, S + "silv_fighter",      ["fighter_id"])
+merge_cito(silv_event_cito,   S + "silv_event",        ["event_id"])     # events are never deleted
+merge_cito(silv_fight_cito,   S + "silv_fight",        ["fight_id"],          in_list("event_id", scope_events))
+merge_cito(silv_round_cito,   S + "silv_round",        ["fight_id", "round"], in_list("fight_id", scope_fights))
+
+# --- Fighters nobody points at any more ------------------------------------------
+# A "cito_<uuid>" debut that a later run matched to a UFCStats ID (e.g. once kagglesk
+# has the fighter): the xref now points elsewhere, so the cito_ row is an orphan.
+# Deleted only if no fight still uses it.
+xref_ids  = spark.read.table(S + "silv_fighter_xref").filter("source = 'cito'").select("fighter_id")
+fight_ids = (spark.read.table(S + "silv_fight").filter("source = 'cito'")
+             .select(F.explode(F.array("f1_fighter_id", "f2_fighter_id")).alias("fighter_id")))
+orphans = [r.fighter_id for r in (spark.read.table(S + "silv_fighter").filter("source = 'cito'")
+    .join(xref_ids, "fighter_id", "left_anti").join(fight_ids, "fighter_id", "left_anti").collect())]
+if orphans:
+    DeltaTable.forName(spark, S + "silv_fighter").delete((F.col("source") == "cito") & F.col("fighter_id").isin(orphans))
+print("orphan cito_ fighters deleted:", len(orphans))
+
+# A fight OUTSIDE the scope still carrying a cito_ ID the xref no longer uses was not
+# re-processed: its fighter would split into two identities. Only a full refresh fixes it.
+stale = fight_ids.filter(F.col("fighter_id").startswith("cito_")).join(xref_ids, "fighter_id", "left_anti").count()
+print("fights with a stale cito_ fighter_id:", stale, "" if stale == 0 else "-> FULL REFRESH NEEDED (cell 1: LOOKBACK_DAYS = None)")
+
+# Read back from the written tables, rows per source (lesson from 19 Oct: verify what was written)
+for t in ["silv_event", "silv_fight", "silv_round", "silv_fighter", "silv_fighter_xref"]:
+    print(t); spark.read.table(S + t).groupBy("source").count().show()
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# =====================================================================
 # Diagnose — which round rows have no corner, and what slugs does the bout have?
 # ---------------------------------------------------------------------
 # Expect: 9 rows; compare round_slug with the two bout_slugs next to it
@@ -732,40 +863,6 @@ problems["duplicate fighter x round rows"] = fr.groupBy("bout_id", "round", "sid
 
 # CELL ********************
 
-# =====================================================================
-# CELL 9 — Write Cito's rows to silver, then read them back
-# ---------------------------------------------------------------------
-# What:   replaces Cito's rows in the five silver tables; Kaggle's rows are untouched.
-# Why:    replaceWhere "source = 'cito'" = delete Cito's old rows + insert the new ones,
-#         as one step. Rerunning the notebook gives the same result (no duplicates).
-# Needs:  20_clean_kaggle switched to replaceWhere "source = 'kaggle'" first,
-#         or rerunning it would wipe these rows.
-# Expect: the read-back shows a 'cito' line next to 'kaggle' in each table
-# =====================================================================
-
-# Stops Run all here if any check in cells 4–8 failed: nothing gets written
-assert all(v == 0 for v in problems.values()), "Checks failed - see the FAIL lines in cell 8; nothing written"
-
-def write_cito(df, table):
-    # Does the table exist yet? silv_fighter_xref doesn't on the first run.
-    try:
-        spark.read.table(table); exists = True
-    except Exception:
-        exists = False
-    w = df.write.format("delta").mode("overwrite")
-    if exists:
-        # Replace only the rows where source = 'cito'.
-        # SQL: DELETE FROM table WHERE source = 'cito'; INSERT INTO table SELECT ...
-        w = w.option("replaceWhere", "source = 'cito'")
-    w.saveAsTable(table)   # first run of a new table: plain create
-
-# Order: fighters before fights, fights before rounds (parents before children)
-write_cito(silv_fighter_xref, S + "silv_fighter_xref")
-write_cito(silv_fighter_cito, S + "silv_fighter")
-write_cito(silv_event_cito,   S + "silv_event")
-write_cito(silv_fight_cito,   S + "silv_fight")
-write_cito(silv_round_cito,   S + "silv_round")
-
 # Read back from the written tables, rows per source (lesson from 19 Oct: verify what was written)
 for t in ["silv_event", "silv_fight", "silv_round", "silv_fighter", "silv_fighter_xref"]:
     print(t); spark.read.table(S + t).groupBy("source").count().show()
@@ -779,9 +876,18 @@ for t in ["silv_event", "silv_fight", "silv_round", "silv_fighter", "silv_fighte
 
 # CELL ********************
 
-# Read back from the written tables, rows per source (lesson from 19 Oct: verify what was written)
-for t in ["silv_event", "silv_fight", "silv_round", "silv_fighter", "silv_fighter_xref"]:
-    print(t); spark.read.table(S + t).groupBy("source").count().show()
+# Cito per event: fights, rounds, rounds without stats
+display(spark.sql("""
+    SELECT e.event_date, e.event_name,
+           count(DISTINCT f.fight_id)   AS fights,
+           count(r.round)               AS rounds,
+           count_if(r.stats_missing)    AS rounds_no_stats
+    FROM silver_layer.dbo.silv_event e
+    JOIN silver_layer.dbo.silv_fight f ON f.event_id = e.event_id AND f.source = 'cito'
+    LEFT JOIN silver_layer.dbo.silv_round r ON r.fight_id = f.fight_id AND r.source = 'cito'
+    WHERE e.source = 'cito'
+    GROUP BY 1, 2 ORDER BY 1
+"""))
 
 # METADATA ********************
 
