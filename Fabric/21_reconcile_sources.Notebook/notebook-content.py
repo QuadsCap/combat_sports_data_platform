@@ -207,3 +207,50 @@ for t in ["silv_event", "silv_fight", "silv_round", "silv_fighter"]:
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+from pyspark.sql import functions as F
+
+# Read the Silver fight table
+df = spark.read.table("silver_layer.dbo.silv_fight")
+
+# Keep only events that appear under more than one source
+overlap_events = (
+    df.groupBy("event_id")
+      .agg(F.countDistinct("source").alias("source_count"))
+      .filter(F.col("source_count") > 1)
+      .select("event_id")
+)
+
+# Count fights per event and source
+fight_counts = (
+    df.join(overlap_events, on="event_id", how="inner")
+      .groupBy("event_id", "source")
+      .agg(F.count("*").alias("fight_count"))
+)
+
+# Pivot sources into side-by-side columns
+comparison = (
+    fight_counts
+      .groupBy("event_id")
+      .pivot("source", ["cito", "kagglesk"])
+      .agg(F.first("fight_count"))
+      .fillna(0)
+)
+
+# Display fight counts for every overlapping event
+display(comparison.orderBy("event_id"))
+
+# Check whether Cito has at least as many fights as Kaggle on every event
+violations = comparison.filter(F.col("cito") < F.col("kagglesk"))
+
+print(f"Number of events where Cito has fewer fights: {violations.count()}")
+display(violations.orderBy("event_id"))
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

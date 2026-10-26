@@ -94,6 +94,8 @@ print(spark.read.table("gold_layer.dbo.dim_date").count(), "rows written")
 # fact_round points here via event_key, so every round can be filtered by event, country or
 # promotion. event_key is the UFCStats event_id from silver (no new key, just renamed);
 # date_key links the event to dim_date.
+# Overlap rule (decisions.md 2026-10-26): silver holds some events from two sources; gold keeps
+# one. If Cito has the event, only Cito's rows are used; otherwise the other sources' rows.
 
 from pyspark.sql import functions as F
 
@@ -109,7 +111,16 @@ era_col = F.lit(None)
 for name, start in sorted(ERAS.items(), key=lambda kv: kv[1]):
     era_col = F.when(F.col("event_date") >= start, name).otherwise(era_col)
 
-silv_event = spark.read.table("silver_layer.dbo.silv_event")
+silv_event_all = spark.read.table("silver_layer.dbo.silv_event")
+cito_event_ids = silv_event_all.filter("source = 'cito'").select("event_id").distinct()
+
+def cito_wins(df):
+    # Cito rows + non-Cito rows whose event Cito doesn't have.
+    # left_anti = SQL "WHERE event_id NOT IN (cito events)". Also used in the dim_fight cell.
+    return df.filter("source = 'cito'").unionByName(
+        df.filter("source != 'cito'").join(cito_event_ids, "event_id", "left_anti"))
+
+silv_event = cito_wins(silv_event_all)
 
 dim_event = silv_event.select(
     F.col("event_id").alias("event_key"),
@@ -125,13 +136,15 @@ dim_event = silv_event.select(
     era_col.alias("era"),
 )
 
-# --- Checks ---
+# --- Checks (blocking) ---
 dim_date = spark.read.table("gold_layer.dbo.dim_date")
-print("rows:", dim_event.count(), "(expect 774)")
-print("event_key unique:", dim_event.select("event_key").distinct().count(), "(expect 774)")
-print("date_key null:", dim_event.filter(F.col("date_key").isNull()).count(), "(expect 0)")
-print("date_key not in dim_date:", dim_event.join(dim_date, "date_key", "left_anti").count(), "(expect 0)")
-print("era null:", dim_event.filter(F.col("era").isNull()).count(), "(expect 0; else an event predates the first era)")
+n = dim_event.count()
+print("rows:", n, "| silver rows:", silv_event_all.count(), "| dropped (overlap):", silv_event_all.count() - n, "(expect 5)")
+assert dim_event.select("event_key").distinct().count() == n, "event_key not unique"
+assert dim_event.filter(F.col("event_key").isNull()).count() == 0, "event_key null"
+assert dim_event.filter(F.col("date_key").isNull()).count() == 0, "date_key null"
+assert dim_event.join(dim_date, "date_key", "left_anti").count() == 0, "date_key not in dim_date"
+assert dim_event.filter(F.col("era").isNull()).count() == 0, "era null: an event predates the first era"
 dim_event.groupBy("era").agg(F.count("*").alias("events"), F.min("event_date").alias("first"), F.max("event_date").alias("last")).orderBy("first").show()
 
 # --- Write ---
@@ -202,10 +215,12 @@ print(spark.read.table("gold_layer.dbo.dim_fighter").count(), "rows written")
 # method, outcome, title, referee, and the odds (benchmark only, never a model input).
 # fact_round points here via fight_key. Corner-specific fields stay as f1/f2 pairs, with
 # f1/f2_fighter_key telling which fighter each side is (option A, decisions.md 2026-10-08).
+# Same overlap rule as dim_event: cito_wins() is defined in the dim_event cell (run that first).
 
 from pyspark.sql import functions as F
 
-silv_fight = spark.read.table("silver_layer.dbo.silv_fight")
+silv_fight_all = spark.read.table("silver_layer.dbo.silv_fight")
+silv_fight = cito_wins(silv_fight_all)
 
 def fighter_key(col):
     # Same key as dim_fighter (xxhash64 of the UFCStats id). THIS IS A NULLGUARD: Spark hashes null to a
@@ -267,18 +282,25 @@ dim_fight = (
     .withColumn("weight_limit_lbs", to_map(UFC_WEIGHT_LIMIT_LBS)[F.col("weight_class")])
 )
 
-# --- Checks ---
+# --- Checks (blocking) ---
 dim_fighter = spark.read.table("gold_layer.dbo.dim_fighter")
-print("rows:", dim_fight.count(), "(expect 8555)")
-print("fight_key unique:", dim_fight.select("fight_key").distinct().count(), "(expect 8555)")
-print("f1_fighter_key not in dim_fighter:", dim_fight.join(dim_fighter, dim_fight.f1_fighter_key == dim_fighter.fighter_key, "left_anti").count(), "(expect 0)")
-print("f2_fighter_key not in dim_fighter:", dim_fight.join(dim_fighter, dim_fight.f2_fighter_key == dim_fighter.fighter_key, "left_anti").count(), "(expect 0)")
-print("winner_fighter_key null:", dim_fight.filter(F.col("winner_fighter_key").isNull()).count(), "(expect 7 = 5 draws + 2 NC)")
-print("winner not one of the two fighters:", dim_fight.filter(F.col("winner_fighter_key").isNotNull()
-      & (F.col("winner_fighter_key") != F.col("f1_fighter_key")) & (F.col("winner_fighter_key") != F.col("f2_fighter_key"))).count(), "(expect 0)")
+n = dim_fight.count()
+print("rows:", n, "| silver rows:", silv_fight_all.count(), "| dropped (overlap):", silv_fight_all.count() - n, "(expect 63)")
+assert dim_fight.select("fight_key").distinct().count() == n, "fight_key not unique"
+assert dim_fight.filter(F.col("fight_key").isNull()).count() == 0, "fight_key null"
+
+# Overlap rule held: no event has fights from more than one source
+multi = silv_fight.groupBy("event_id").agg(F.countDistinct("source").alias("n_src")).filter("n_src > 1").count()
+assert multi == 0, f"{multi} events with fights from more than one source"
+
+assert dim_fight.join(dim_fighter, dim_fight.f1_fighter_key == dim_fighter.fighter_key, "left_anti").count() == 0, "f1_fighter_key not in dim_fighter"
+assert dim_fight.join(dim_fighter, dim_fight.f2_fighter_key == dim_fighter.fighter_key, "left_anti").count() == 0, "f2_fighter_key not in dim_fighter"
+print("winner_fighter_key null (draws + NC):", dim_fight.filter(F.col("winner_fighter_key").isNull()).count())
+assert dim_fight.filter(F.col("winner_fighter_key").isNotNull()
+      & (F.col("winner_fighter_key") != F.col("f1_fighter_key")) & (F.col("winner_fighter_key") != F.col("f2_fighter_key"))).count() == 0, "winner not one of the two fighters"
 
 # Guard: the weight-class maps above are UFC-only
-non_ufc = spark.read.table("silver_layer.dbo.silv_event").filter(F.col("promotion") != "UFC").count()
+non_ufc = silv_event.filter(F.col("promotion") != "UFC").count()
 assert non_ufc == 0, f"{non_ufc} non-UFC events - weight-class maps are UFC-only, build the promotion-keyed reference first"
 
 assert dim_fight.filter(F.col("weight_class_sort").isNull()).count() == 0, "weight_class without sort number"

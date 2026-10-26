@@ -46,11 +46,19 @@
 from pyspark.sql import functions as F
 
 silv_round = spark.read.table("silver_layer.dbo.silv_round")
-silv_fight = spark.read.table("silver_layer.dbo.silv_fight").select(
-    "fight_id", "event_id", "event_date", "f1_fighter_id", "f2_fighter_id", "winner_fighter_id")
+
+# CHANGED - overlap rule (decisions.md 2026-10-26), same as dim_event/dim_fight: if Cito has the
+# event, only Cito's fights. Rounds follow their fight through the inner join below.
+cito_event_ids = spark.read.table("silver_layer.dbo.silv_event").filter("source = 'cito'").select("event_id").distinct()
+silv_fight_all = spark.read.table("silver_layer.dbo.silv_fight")
+silv_fight = (silv_fight_all.filter("source = 'cito'")
+    .unionByName(silv_fight_all.filter("source != 'cito'").join(cito_event_ids, "event_id", "left_anti"))
+    .select("fight_id", "event_id", "event_date", "f1_fighter_id", "f2_fighter_id", "winner_fighter_id"))
 dob = spark.read.table("silver_layer.dbo.silv_fighter").select("fighter_id", "dob")
 
 rounds = silv_round.join(silv_fight, "fight_id")
+# CHANGED - show how many rounds the overlap rule dropped
+print("silver rounds:", silv_round.count(), "| kept:", rounds.count(), "| dropped (overlap):", silv_round.count() - rounds.count())
 
 # Stat names without the corner prefix: f1_knockdowns -> knockdowns
 STATS = [c[3:] for c in silv_round.columns if c.startswith("f1_")]
@@ -82,7 +90,7 @@ fact_round = one_corner(1, 2).unionByName(one_corner(2, 1))
 # (decisions.md 2026-10-10: key enforcement = blocking asserts in code)
 
 n = fact_round.count()
-expected = silv_round.count() * 2
+expected = rounds.count() * 2   # CHANGED - rounds after the overlap rule, not all of silv_round
 print("rows:", n, "| expected:", expected)
 assert n == expected, f"row count {n} != {expected} (2 rows per round)"
 
@@ -106,9 +114,9 @@ for fk, dim, pk_col in fks:
     print(f"{fk} -> {dim}: {orphans} orphans")
     assert orphans == 0, f"{orphans} {fk} values missing in {dim}"
 
-# Nothing lost in the unpivot: totals must match silver (f1 + f2)
+# Nothing lost in the unpivot: totals must match silver (f1 + f2) for the rounds kept
 for s in ["sig_strikes_succ", "knockdowns", "ctrl_sec"]:
-    silver_total = silv_round.agg(F.sum(f"f1_{s}") + F.sum(f"f2_{s}")).first()[0]
+    silver_total = rounds.agg(F.sum(f"f1_{s}") + F.sum(f"f2_{s}")).first()[0]   # CHANGED - rounds, not silv_round
     gold_total = fact_round.agg(F.sum(s)).first()[0]
     print(f"{s}: silver {silver_total} | gold {gold_total}")
     assert silver_total == gold_total, f"{s} total changed in unpivot"
