@@ -141,7 +141,7 @@ Match key: `event_id` + the two fighter IDs in either corner (`LEAST`/`GREATEST`
 | Check | Result | What it tells us |
 |---|---|---|
 | Fights matched | **62 / 62** Cito fights match a kagglesk fight | All **124 Cito name matches confirmed** against UFCStats IDs. Cito has no fighter IDs, so this is the only independent test of that entity resolution. |
-| Fights missing | **1 of 63**: Nate Landwehr vs Mandel Nallo (2026-10-17) absent from Cito | Not in any Cito response (19 Oct and 24 Oct snapshots), though the fight happened. Query to Cito drafted 2026-10-24. |
+| Fights missing | **1 of 63** on 2026-10-24: Nate Landwehr vs Mandel Nallo (2026-10-17) absent from Cito | Not in the 19 Oct and 24 Oct snapshots, though the fight happened. Query to Cito drafted 2026-10-24. **Arrived late; in silver as `cito_13016` by 2026-10-28**, picked up by the incremental `MERGE` with no manual step — outcome, method and finish round match kagglesk. |
 | Fight columns (11: outcome, winner, method, decision type, finish round/time, weight class, title fight, gender, scheduled rounds, referee) | **0 disagreements** | Cito and UFCStats agree on what happened. `scheduled_rounds` is null on all Cito rows (no such field). |
 
 ## What went wrong, and how it was caught
@@ -152,6 +152,8 @@ The failures are the useful part. Each one is now guarded.
 2. **Silver writes pointed at the wrong table** — after the `replaceWhere` switch, all four writes in `20_clean_kaggle` targeted `silv_event`, so fights, rounds and fighters were silently not refreshed. A row count per source couldn't see it, since the old rows were still there. Caught when the copied notebook hit `replaceWhere`'s own guard (`DELTA_REPLACE_WHERE_MISMATCH`), which also stopped it from overwriting Kaggle rows. Checked since with `DESCRIBE HISTORY` timestamps.
 3. **Draws and no-contests mapped to `UNMAPPED`** — kagglesk leaves `winner` empty where jerzyszocik wrote "No Contest", and the copied mapping only knew the latter. 2 fights reached silver as `UNMAPPED`. **Caught by the reconciliation**, not by the notebook's own checks. Fix: mapping accepts both; an `assert` now stops the run on any unmapped method or outcome.
 4. **Notebook cells failing on re-run** — cells that overwrote their own input (`fr = fr.join(...)`) broke on a second run. Rule since: a cell never reassigns the variable it reads; Run all after a session restart.
+5. **One fighter, two identities: an invisible apostrophe** — Kaggle writes `Lone'er Kavanagh` with a straight apostrophe, Cito with a curly one (`’`). Name normalisation turned the first into a space and silently dropped the second, so the names never matched and Cito's 24 Oct load created a second fighter. Caught in gold by a count of Cito-only fighter IDs (2 where 0 was expected); the exact-name check beside it missed it, because the two names look identical on screen. Fix: apostrophes are removed before matching; full refresh merged the identities. The deterministic matcher's record on Cito is now **153 of 154 fighters matched, 1 failure found and fixed, 1 genuine debut**.
+6. **A change the incremental load couldn't see** — Cito renamed a 19 Sep event in a 25 Oct snapshot. The incremental scope selects events by event date (35 days back), so it never re-read that event; a full refresh found it. Harmless (name only), accepted as a known limitation; a watermark on ingest time is parked.
 
 ## Limits and what's open
 

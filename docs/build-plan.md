@@ -162,11 +162,13 @@ the date.**
 - [x] `20_clean_cito` — map the JSON onto the silver contract. Cito field names only here.
       **Done 2026-10-21** (decisions.md): 5 events / 62 fights / 126 rounds / 21 new fighters in silver, 46 checks pass.
       Writes with `replaceWhere "source = 'cito'"` (full rebuild of Cito rows from all of bronze), not `MERGE` — see below.
-- [ ] Refresh fighter profiles (dob, reach, height) from Cito, if it carries them, and add a silver check:
+- [x] Refresh fighter profiles (dob, reach, height) from Cito, if it carries them, and add a silver check:
       profile completeness by debut year. Kaggle left recent fighters' profiles empty (decisions.md 2026-10-11).
       **Mostly moot since 2026-10-24:** every Cito fighter now resolves to a Kaggle/kagglesk fighter that carries a profile; only the completeness check is left.
-- [ ] Incremental load: Delta `MERGE` on natural keys. Run it twice; the second run changes
+      **Check added 2026-10-28** (decisions.md), report only; result still to be recorded.
+- [x] Incremental load: Delta `MERGE` on natural keys. Run it twice; the second run changes
       nothing. That is the idempotency test.
+      **Done 2026-10-25** (decisions.md): `20_clean_cito`, 35-day lookback; second run 0 inserted / 0 updated.
 - [x] Load every event from 2026-05-16 to today (as far as the gap decision allows).
       **Done 2026-10-24:** gap 16 May → 17 Oct from kagglesk (`10_ingest_kagglesk` / `20_clean_kagglesk`, 249 fights); Cito through 17 Oct, no newer card with stats yet — each `10_ingest_cito` run picks up new events.
 
@@ -186,8 +188,11 @@ the date.**
       **Done 2026-10-24** (`21_reconcile_sources`): 5 events, 62/62 fights matched, 1 fight missing in Cito, 0 disagreements on 11 fight columns after fixing a draw/NC mapping bug the check found.
 - [x] Fighter identity bridged across sources; Cito-only fighters get new `fighter_key`s.
       **Done 2026-10-24** by run order (Kaggle → kagglesk → Cito): all 124 Cito fighters resolve to UFCStats IDs, 0 Cito-only fighters; confirmed by the reconciliation.
-- [ ] Gold + Power BI refreshed on the combined data. **List every downstream change that was
+- [x] Gold + Power BI refreshed on the combined data. **List every downstream change that was
       needed** — ideally none. The list is the grade on the silver contract.
+      **Done 2026-10-28** (decisions.md): all gold checks pass, 263 fights after 16 May in gold and in the
+      Power BI model. Downstream changes: the overlap rule + Kaggle-only hard-coded expectations; no column,
+      type or key change; none in Power BI.
 
 **Done when — Wed 4 Nov:** the report shows fights after 2026-05-16, the incremental load re-runs
 cleanly, and the disagreement count is written up.

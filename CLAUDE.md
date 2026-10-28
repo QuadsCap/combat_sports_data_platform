@@ -19,6 +19,14 @@ An end-to-end forecasting data platform on combat sports fight data in Microsoft
 - **Maintain `decisions.md`.** Every non-trivial decision, scope change, or parked idea gets a dated one-line entry at the moment it happens. This is cheap insurance against relitigating history.
 - **Definition of done, per task:** code runs, output verified against a sample, one-line note of what it does and any honest limitation. Publish the failures too (e.g., where the LLM failed at entity resolution and the deterministic fallback took over) — the failure analysis is the portfolio differentiator.
 
+## Working across two computers (since 2026-10-28)
+
+Emil works on two PCs at once. Remind him of these rules at the start of a session and before he stops or switches computers:
+
+- **Start:** `git pull`. If the repo has newer docs than Fabric, Fabric → Source control → Update.
+- **During:** notebooks are edited only in Fabric (commit via Fabric Git sync); docs only locally. Never the same file in both places between syncs.
+- **Stop / switch:** commit and `git push` local edits; commit notebooks from Fabric. A local commit is not on GitHub until it's pushed. Check `git status -sb` for "ahead"/"behind" before calling things in sync.
+
 ## Boundaries
 
 - Phase 4 (monetization/betting/products) is parked until Phase 3's model exists with holdout numbers — that decision belongs to Emil at that fork, not earlier, and not by drift.
