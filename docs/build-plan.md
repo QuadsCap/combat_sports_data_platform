@@ -178,7 +178,7 @@ the date.**
 
 ---
 
-### Sprint 7 — Uge 10 (Mon 2 – Wed 4 Nov) · **PHASE 2 GATE**
+### Sprint 7 — Uge 9–10 (Thu 29 Oct – Wed 4 Nov) · **PHASE 2 GATE**
 
 **Goal: the switch is proven end to end.**
 
@@ -193,6 +193,24 @@ the date.**
       **Done 2026-10-28** (decisions.md): all gold checks pass, 263 fights after 16 May in gold and in the
       Power BI model. Downstream changes: the overlap rule + Kaggle-only hard-coded expectations; no column,
       type or key change; none in Power BI.
+- [ ] **End-to-end test, "layers ready"** (Thu 29 Oct): timed run `10_ingest_cito → 20 → 30 → 31`, second run
+      with identical counts, one post-16 May fight traced bronze → `fact_round` against ufcstats.com.
+
+*Added to the gate 2026-10-24 (decisions.md); day plan 2026-10-28, Saturday 31 Oct off:*
+
+- [ ] **Scheduled Fabric pipeline** (Thu 29 afternoon + Fri 30 Oct, 3–4.5 h): `10 → 20 → 30 → 31` as notebook
+      activities, `LOOKBACK_DAYS` as a parameter, schedule, **email alert on failure**. Open on Fri: run
+      frequency (Cito free tier 500 calls/month) and a periodic full refresh (`LOOKBACK_DAYS = None`).
+- [ ] **Two decisions** (Fri 30 Oct, else Mon morning): dashboard tool (Power BI vs Evidence) and how the
+      public/private split is done.
+- [ ] **Dashboard redesign** (Mon 2 – Tue 3 Nov morning).
+- [ ] **GitHub packaging** (Tue 3 Nov): README with the Phase 1–2 story, one architecture diagram,
+      screenshots, repo cleanup.
+- [ ] **Public/private split executed + gate check** (Wed 4 Nov).
+
+**Cut order for these, in this order** (Claude's proposal 2026-10-28, decided on the day): (1) pipeline run log
+table → Fabric run history; (2) dashboard redesign → current report + readability fixes; (3) diagram →
+screenshots only. Not cuttable: the scheduled pipeline + failure alert, the README story, the split, the gate check.
 
 **Done when — Wed 4 Nov:** the report shows fights after 2026-05-16, the incremental load re-runs
 cleanly, and the disagreement count is written up.
