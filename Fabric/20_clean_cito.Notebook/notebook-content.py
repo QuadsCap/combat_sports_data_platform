@@ -51,7 +51,7 @@ import datetime
 # that window can get a new snapshot (late stats, corrections). Older events are final.
 # None = full refresh: every event in bronze. Use it after a MANUAL_MAP / NAME_FIX
 # change, or when cell 9 says "FULL REFRESH NEEDED".
-LOOKBACK_DAYS = 35   # 30-day API window + 5 days margin
+LOOKBACK_DAYS = 35  # 30-day API window + 5 days margin
 
 # Read the bronze table containing historical API responses.
 # Error responses (429, 500 ...) have no data: a failed call must not replace a good snapshot.
@@ -205,7 +205,7 @@ def x_of_y(c, i):
     return F.when(v != "", v.cast("int"))   # same rule as mmss: bad text -> null
 
 # --- norm_name: make two spellings of a name comparable ----------------
-# "José Aldo", "jose aldo", "Jose  Aldo" -> "jose aldo".
+# "José Aldo", "jose aldo", "Jose  Aldo" -> "jose aldo"; "Lone'er", "Lone’er" -> "loneer".
 # This is a UDF (user-defined function): plain Python that Spark runs once per row.
 # Slower than built-in F. functions, but fine for ~120 names, and Python can strip
 # accents, which no built-in Spark function does.
@@ -215,6 +215,9 @@ def norm_name(s):
         return None
     # NFKD splits "é" into "e" + a separate accent mark; the ASCII round-trip drops the mark
     s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
+    # Apostrophes are removed, not turned into a space: the ASCII step above already drops a
+    # curly ’, so a straight ' must go too, or "Lone'er" != "Lone’er" (decisions.md 2026-10-28)
+    s = s.replace("'", "")
     # Lowercase; anything that isn't a-z or space becomes a space ("St-Pierre" -> "st pierre");
     # split + join collapses double spaces and trims both ends
     return " ".join(re.sub(r"[^a-z ]", " ", s.lower()).split())
@@ -943,5 +946,75 @@ thin.show()
 
 # META {
 # META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# MAGIC %%sql
+# MAGIC SELECT
+# MAGIC     f.full_name,
+# MAGIC     f.nickname,
+# MAGIC     sf.event_date,
+# MAGIC     CASE
+# MAGIC         WHEN sf.f1_fighter_id = f.fighter_id THEN opp1.full_name
+# MAGIC         ELSE opp2.full_name
+# MAGIC     END AS opponent_name,
+# MAGIC     sf.source,
+# MAGIC     sf.fight_id
+# MAGIC FROM silver_layer.dbo.silv_fighter AS f
+# MAGIC LEFT JOIN silver_layer.dbo.silv_fight AS sf
+# MAGIC     ON f.fighter_id = sf.f1_fighter_id
+# MAGIC     OR f.fighter_id = sf.f2_fighter_id
+# MAGIC LEFT JOIN silver_layer.dbo.silv_fighter AS opp1
+# MAGIC     ON sf.f2_fighter_id = opp1.fighter_id
+# MAGIC LEFT JOIN silver_layer.dbo.silv_fighter AS opp2
+# MAGIC     ON sf.f1_fighter_id = opp2.fighter_id
+# MAGIC WHERE f.fighter_id LIKE 'cito_%'
+# MAGIC ORDER BY sf.event_date, f.full_name;
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# MAGIC %%sql
+# MAGIC SELECT fighter_id, full_name, source FROM silver_layer.dbo.silv_fighter
+# MAGIC WHERE full_name LIKE '%Kavanagh%' OR full_name LIKE '%Chopurov%'
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# MAGIC %%sql
+# MAGIC -- What changed in silv_event between v22 (before the full refresh) and v23 (after)?
+# MAGIC -- EXCEPT = rows in the first set that aren't in the second. Both directions:
+# MAGIC -- 'before' = the old version of the row, 'after' = the new one.
+# MAGIC SELECT 'before' AS version, * FROM (
+# MAGIC     SELECT * FROM silver_layer.dbo.silv_event VERSION AS OF 22 WHERE source = 'cito'
+# MAGIC     EXCEPT
+# MAGIC     SELECT * FROM silver_layer.dbo.silv_event VERSION AS OF 23 WHERE source = 'cito'
+# MAGIC )
+# MAGIC UNION ALL
+# MAGIC SELECT 'after' AS version, * FROM (
+# MAGIC     SELECT * FROM silver_layer.dbo.silv_event VERSION AS OF 23 WHERE source = 'cito'
+# MAGIC     EXCEPT
+# MAGIC     SELECT * FROM silver_layer.dbo.silv_event VERSION AS OF 22 WHERE source = 'cito'
+# MAGIC )
+# MAGIC ORDER BY event_id, version DESC
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
 # META   "language_group": "synapse_pyspark"
 # META }

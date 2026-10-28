@@ -160,6 +160,7 @@ print(spark.read.table("gold_layer.dbo.dim_event").count(), "rows written")
 
 # CELL ********************
 
+
 # Why this exists: the "who" of every round. fact_round points here twice: fighter_key (whose
 # stats are on the row) and opponent_key (who they fought). SCD Type 1: one row per fighter,
 # current values only (decisions.md 2026-10-07). fighter_key is our own key, stable on re-run
@@ -189,18 +190,46 @@ dim_fighter = silv_fighter.select(
 )
 
 # --- Checks ---
-print("rows:", dim_fighter.count(), "(expect 2686)")
-print("fighter_key unique:", dim_fighter.select("fighter_key").distinct().count(), "(expect 2686; less = hash collision)")
-print("fighter_id unique:", dim_fighter.select("fighter_id").distinct().count(), "(expect 2686)")
+fighter_count = silv_fighter.count()
+fighter_key_count = dim_fighter.select("fighter_key").distinct().count()
+fighter_id_count = dim_fighter.select("fighter_id").distinct().count()
+
+print("rows:", fighter_count)
+print("fighter_key unique:", fighter_key_count)
+print("fighter_id unique:", fighter_id_count)
+
+assert fighter_key_count == fighter_count, "fighter_key is not unique (possible hash collision or duplicate fighter)"
+assert fighter_id_count == fighter_count, "fighter_id is not unique (duplicate fighter identities)"
+
 print("display_name null:", dim_fighter.filter(F.col("display_name").isNull()).count(), "(expect 0)")
 
 dupes = dim_fighter.groupBy("display_name").count().filter("count > 1")
 print("display_name shared by >1 fighter:", dupes.count(), "(expect 0; else Power BI slicer can't tell them apart)")
 dupes.show(truncate=False)
 
+# New fighter identities by source
+new_fighters_by_source = dim_fighter.groupBy("source").count().orderBy("source")
+new_fighters_by_source.show(truncate=False)
+
+# Duplicate identity check: same person under two ids (UFCStats id + cito_<uuid>).
+# Uniqueness asserts can't see this - the two ids are different. Only Cito can create it:
+# Kaggle and kagglesk both use UFCStats ids, so the same person always gets the same id.
+# Report only: a genuine Cito debut no other source has yet is legitimate.
+cito_ids = dim_fighter.filter(F.col("fighter_id").startswith("cito_"))
+print("cito_ fighter ids:", cito_ids.count(), "(expect 0; all Cito fighters matched on 2026-10-24)")
+
+# If any: same full_name on a UFCStats-id fighter = probable missed match, not a debut
+name_clash = (cito_ids.select("fighter_id", "full_name")
+    .join(dim_fighter.filter(~F.col("fighter_id").startswith("cito_"))
+                     .select(F.col("fighter_id").alias("ufcstats_id"), "full_name"),
+          "full_name", "inner"))
+print("cito_ fighters whose name exists under a UFCStats id:", name_clash.count(), "(expect 0; else probable duplicate identity)")
+name_clash.show(truncate=False)
+
 # --- Write ---
 dim_fighter.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("gold_layer.dbo.dim_fighter")
 print(spark.read.table("gold_layer.dbo.dim_fighter").count(), "rows written")
+
 
 # METADATA ********************
 
