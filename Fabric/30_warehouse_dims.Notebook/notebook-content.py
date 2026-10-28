@@ -216,7 +216,7 @@ new_fighters_by_source.show(truncate=False)
 # Kaggle and kagglesk both use UFCStats ids, so the same person always gets the same id.
 # Report only: a genuine Cito debut no other source has yet is legitimate.
 cito_ids = dim_fighter.filter(F.col("fighter_id").startswith("cito_"))
-print("cito_ fighter ids:", cito_ids.count(), "(expect 0; all Cito fighters matched on 2026-10-24)")
+print("cito_ fighter ids:", cito_ids.count(), "(debuts no UFCStats-id source has yet; 2026-10-28: 1 = Asaf Chopurov)")
 
 # If any: same full_name on a UFCStats-id fighter = probable missed match, not a debut
 name_clash = (cito_ids.select("fighter_id", "full_name")
@@ -334,6 +334,11 @@ assert non_ufc == 0, f"{non_ufc} non-UFC events - weight-class maps are UFC-only
 
 assert dim_fight.filter(F.col("weight_class_sort").isNull()).count() == 0, "weight_class without sort number"
 assert dim_fight.filter(F.col("weight_limit_lbs").isNull() & ~F.col("weight_class").isin("Catchweight", "Open Weight")).count() == 0, "weight_class without lbs limit"
+from pyspark.sql import functions as F
+
+post_may = silv_fight.filter(F.col("event_date") > "2026-05-16")
+post_may.groupBy("source").agg(F.count("*").alias("fights")).show()
+assert post_may.count() > 0, "no fights after 2026-05-16 in gold - new sources missing"
 
 # --- Write ---
 dim_fight.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable("gold_layer.dbo.dim_fight")
