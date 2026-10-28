@@ -895,3 +895,53 @@ display(spark.sql("""
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+# Profile completeness by debut year - report only, not blocking (decisions.md 2026-10-11)
+# Why this exists: the baseline broke on 11 Oct because recent fighters had empty profiles
+# (dob, height, reach), which was a scrape-timing artefact, not a fighter trait. Silver checked
+# null COUNTS, which looked fine; the null RATE over time is what moved. This shows that rate
+# per debut year, so the same gap shows up here before it reaches a model.
+
+from pyspark.sql import functions as F
+
+pc_fights = spark.read.table("silver_layer.dbo.silv_fight")
+
+# Debut year = year of each fighter's first fight, from either corner.
+# explode(array(f1, f2)) = SQL "SELECT f1 ... UNION ALL SELECT f2 ...": one row per fighter per fight
+pc_debut = (pc_fights
+    .select("event_date", F.explode(F.array("f1_fighter_id", "f2_fighter_id")).alias("fighter_id"))
+    .groupBy("fighter_id")
+    .agg(F.year(F.min("event_date")).alias("debut_year")))
+
+# left join: fighters with no fight in silver keep debut_year = null (shown as their own row)
+pc_profiles = spark.read.table("silver_layer.dbo.silv_fighter").join(pc_debut, "fighter_id", "left")
+
+def pct_filled(c):
+    # avg of a 1/0 flag = share of rows where the column is filled, like AVG(CASE WHEN c IS NOT NULL THEN 1 ELSE 0 END)
+    return F.round(100 * F.avg(F.col(c).isNotNull().cast("int")), 1)
+
+pc_all_missing = F.col("dob").isNull() & F.col("height_cm").isNull() & F.col("reach_cm").isNull()
+
+completeness = (pc_profiles.groupBy("debut_year")
+    .agg(F.count("*").alias("fighters"),
+         pct_filled("dob").alias("dob_pct"),
+         pct_filled("height_cm").alias("height_pct"),
+         pct_filled("reach_cm").alias("reach_pct"),
+         F.round(100 * F.avg(pc_all_missing.cast("int")), 1).alias("all_missing_pct"))
+    .orderBy("debut_year"))
+
+display(completeness)
+
+# Flag recent debut years where profiles are thin (threshold is a starting point, not a decision)
+thin = completeness.filter((F.col("debut_year") >= 2020) & (F.least("dob_pct", "height_pct", "reach_pct") < 90))
+print("recent debut years with dob/height/reach < 90 % filled:", thin.count())
+thin.show()
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
