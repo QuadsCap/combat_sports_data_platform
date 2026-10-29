@@ -144,6 +144,18 @@ Match key: `event_id` + the two fighter IDs in either corner (`LEAST`/`GREATEST`
 | Fights missing | **1 of 63** on 2026-10-24: Nate Landwehr vs Mandel Nallo (2026-10-17) absent from Cito | Not in the 19 Oct and 24 Oct snapshots, though the fight happened. Query to Cito drafted 2026-10-24. **Arrived late; in silver as `cito_13016` by 2026-10-28**, picked up by the incremental `MERGE` with no manual step — outcome, method and finish round match kagglesk. |
 | Fight columns (11: outcome, winner, method, decision type, finish round/time, weight class, title fight, gender, scheduled rounds, referee) | **0 disagreements** | Cito and UFCStats agree on what happened. `scheduled_rounds` is null on all Cito rows (no such field). |
 
+## One fight traced against the source of truth
+
+Every other check compares our layers with each other (counts, keys, silver = gold totals). A consistent error (landed/attempted swapped, corners swapped, rounds shifted) passes all of them, and the reconciliation above compared fight-level columns only, never round stats. So one Cito-only fight was traced by hand from silver to `fact_round` and compared with its ufcstats.com page (2026-10-29, queries in `21_reconcile_sources`): **Lone'er Kavanagh vs Ramazan Temirov, UFC 333, 2026-10-24.**
+
+| | ufcstats.com | silver | gold (`fact_round`) |
+|---|---|---|---|
+| Kavanagh | KD 1 · sig. str. 23 of 44 · ctrl 0:01 | 1 · 23 / 44 · 1 s | 1 · 23 / 44 · 1 s · `won` 1 |
+| Temirov | KD 0 · sig. str. 18 of 40 · ctrl 0:00 | 0 · 18 / 40 · 0 s | 0 · 18 / 40 · 0 s · `won` 0 |
+| Finish | KO/TKO, round 1, 4:28 | 1 round row | 2 rows (one per fighter) |
+
+All equal. In gold, Kavanagh carries his UFCStats ID, not a Cito-only ID — the apostrophe fix (item 5 below) holds end to end. Limit: one fight, one round; a sample, not a proof.
+
 ## What went wrong, and how it was caught
 
 The failures are the useful part. Each one is now guarded.
