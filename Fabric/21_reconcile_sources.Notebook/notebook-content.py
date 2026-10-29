@@ -254,3 +254,68 @@ display(violations.orderBy("event_id"))
 # META   "language": "python",
 # META   "language_group": "synapse_pyspark"
 # META }
+
+# CELL ********************
+
+# MAGIC %%sql
+# MAGIC -- Trace one fight, step 1 of 2: SILVER
+# MAGIC -- Why this exists: every other check compares our layers with each other (counts, keys,
+# MAGIC -- silver = gold totals). A consistent error - landed/attempted swapped, corners swapped,
+# MAGIC -- rounds shifted - passes all of them. Only a comparison with an outside truth
+# MAGIC -- (the ufcstats.com fight page) catches it. Fight: Lone'er Kavanagh vs Ramazan Temirov,
+# MAGIC -- UFC 333, 2026-10-24 - Cito only (no other source to reconcile against), and the
+# MAGIC -- fighter the apostrophe fix applies to (decisions.md 2026-10-28).
+# MAGIC -- Grain: silv_round = one row per fight x round, both corners side by side (f1_ / f2_).
+# MAGIC SELECT r.round,
+# MAGIC        f1.full_name AS f1,                          -- corner 1, as our code assigned it
+# MAGIC        r.f1_sig_strikes_succ, r.f1_sig_strikes_att, -- "16 of 40" from Cito -> 16 / 40
+# MAGIC        f2.full_name AS f2,                          -- corner 2
+# MAGIC        r.f2_sig_strikes_succ, r.f2_sig_strikes_att,
+# MAGIC        r.f1_knockdowns, r.f2_knockdowns,
+# MAGIC        r.f1_ctrl_sec,   r.f2_ctrl_sec               -- control time in seconds ("1:23" -> 83)
+# MAGIC FROM silver_layer.dbo.silv_round r
+# MAGIC -- the round row only knows fight_id; which fighter is f1 / f2 is stored on the fight
+# MAGIC JOIN silver_layer.dbo.silv_fight sf   ON r.fight_id = sf.fight_id
+# MAGIC -- the same fighter table twice under two aliases, once per corner, to turn ids into names
+# MAGIC JOIN silver_layer.dbo.silv_fighter f1 ON sf.f1_fighter_id = f1.fighter_id
+# MAGIC JOIN silver_layer.dbo.silv_fighter f2 ON sf.f2_fighter_id = f2.fighter_id
+# MAGIC -- Cito fight ids are "cito_" + Cito's bout id, so the key itself shows the source
+# MAGIC WHERE r.fight_id = 'cito_13066'
+# MAGIC ORDER BY r.round
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
+# MAGIC %%sql
+# MAGIC -- Trace one fight, step 2 of 2: GOLD
+# MAGIC -- Same fight after the unpivot. Grain: fact_round = one row per fight x round x fighter,
+# MAGIC -- so every silver row above becomes TWO rows here: one with f1's stats, one with f2's.
+# MAGIC -- Expect: the same numbers as silver, each on the right fighter's row; same rounds, no extras.
+# MAGIC SELECT fr.round,
+# MAGIC        d.full_name,
+# MAGIC        d.fighter_id,          -- Kavanagh must show bb2c3c3a4662... (his UFCStats id), not cito_...:
+# MAGIC                               -- proves the apostrophe fix reached gold
+# MAGIC        fr.sig_strikes_succ, fr.sig_strikes_att,
+# MAGIC        fr.knockdowns,
+# MAGIC        fr.ctrl_sec,
+# MAGIC        fr.won                 -- 1 on every round row of the winner, 0 for the opponent
+# MAGIC FROM gold_layer.dbo.fact_round fr
+# MAGIC -- fighter_key is a hash (xxhash64 of fighter_id) - unreadable on its own;
+# MAGIC -- the dimension turns it back into a name and the original id
+# MAGIC JOIN gold_layer.dbo.dim_fighter d ON fr.fighter_key = d.fighter_key
+# MAGIC -- in gold the fight key is the silver fight_id, unchanged
+# MAGIC WHERE fr.fight_key = 'cito_13066'
+# MAGIC ORDER BY fr.round, d.full_name
+
+# METADATA ********************
+
+# META {
+# META   "language": "sparksql",
+# META   "language_group": "synapse_pyspark"
+# META }
