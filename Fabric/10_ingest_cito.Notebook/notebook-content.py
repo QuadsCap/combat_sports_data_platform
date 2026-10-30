@@ -229,6 +229,14 @@ display(spark.sql("""
     
 """))
 
+# Fail the run if any event call failed, so the pipeline alert fires.
+# After the bronze write on purpose: the failed response is kept as evidence.
+# 20_clean_cito reads only http_status = 200, so a failed call never reaches silver.
+failed = [(row[6], row[4]) for row in rows if row[4] != 200]   # (event_slug, http_status)
+if failed:
+    raise RuntimeError(f"{len(failed)} Cito event call(s) failed: {failed}")
+
+    
 
 # METADATA ********************
 

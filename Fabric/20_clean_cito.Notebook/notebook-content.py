@@ -25,9 +25,6 @@
 
 # MARKDOWN ********************
 
-
-# MARKDOWN ********************
-
 # ## 20_clean_cito — Bronze → Silver (Cito source)
 # 
 # Cleans the raw Cito JSON into the source-agnostic silver tables defined in `docs/silver-contract.md`. The **only** notebook allowed to know Cito field names: everything is renamed to silver names here, and nothing downstream sees Cito's shape.
@@ -42,19 +39,33 @@
 # - **Checks:** row counts before/after each explode (`explode_outer`, nothing dropped silently), referential integrity, round stats (succ ≤ att, no negatives)
 
 
+# PARAMETERS CELL ********************
+
+# --- Load scope (PARAMETER CELL: the pipeline overrides this value) ----------------
+# Incremental: only events that can have changed since the last load are processed.
+# Cito's free tier re-sends the last 30 days on every call, so only events inside
+# that window can get a new snapshot (late stats, corrections). Older events are final.
+# -1 = full refresh: every event in bronze. Use it after a MANUAL_MAP / NAME_FIX
+# change, or when cell 9 raises "FULL REFRESH NEEDED".
+LOOKBACK_DAYS = 35  # 30-day API window + 5 days margin
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
 # CELL ********************
 
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 import datetime
 
-# --- Load scope ------------------------------------------------------------------
-# Incremental: only events that can have changed since the last load are processed.
-# Cito's free tier re-sends the last 30 days on every call, so only events inside
-# that window can get a new snapshot (late stats, corrections). Older events are final.
-# None = full refresh: every event in bronze. Use it after a MANUAL_MAP / NAME_FIX
-# change, or when cell 9 says "FULL REFRESH NEEDED".
-LOOKBACK_DAYS = 35  # 30-day API window + 5 days margin
+# A pipeline parameter can't be None, so the parameter cell uses -1 for full refresh.
+# int(): the pipeline may pass the value as a string.
+LOOKBACK_DAYS = int(LOOKBACK_DAYS)
+LOOKBACK_DAYS = None if LOOKBACK_DAYS < 0 else LOOKBACK_DAYS
 
 # Read the bronze table containing historical API responses.
 # Error responses (429, 500 ...) have no data: a failed call must not replace a good snapshot.
@@ -788,14 +799,17 @@ if orphans:
     DeltaTable.forName(spark, S + "silv_fighter").delete((F.col("source") == "cito") & F.col("fighter_id").isin(orphans))
 print("orphan cito_ fighters deleted:", len(orphans))
 
-# A fight OUTSIDE the scope still carrying a cito_ ID the xref no longer uses was not
-# re-processed: its fighter would split into two identities. Only a full refresh fixes it.
-stale = fight_ids.filter(F.col("fighter_id").startswith("cito_")).join(xref_ids, "fighter_id", "left_anti").count()
-print("fights with a stale cito_ fighter_id:", stale, "" if stale == 0 else "-> FULL REFRESH NEEDED (cell 1: LOOKBACK_DAYS = None)")
 
 # Read back from the written tables, rows per source (lesson from 19 Oct: verify what was written)
 for t in ["silv_event", "silv_fight", "silv_round", "silv_fighter", "silv_fighter_xref"]:
     print(t); spark.read.table(S + t).groupBy("source").count().show()
+
+    
+print("fights with a stale cito_ fighter_id:", stale, "" if stale == 0 else "-> FULL REFRESH NEEDED (cell 0: LOOKBACK_DAYS = -1)")
+# Silver is already written at this point; the raise stops 30/31 building gold on it
+# and fails the pipeline so the alert fires.
+if stale > 0:
+    raise RuntimeError(f"FULL REFRESH NEEDED: {stale} fights with a stale cito_ fighter_id - rerun 20_clean_cito with LOOKBACK_DAYS = -1")
 
 # METADATA ********************
 
