@@ -200,9 +200,12 @@ the date.**
 
 *Added to the gate 2026-10-24 (decisions.md); day plan 2026-10-28, Saturday 31 Oct off:*
 
-- [ ] **Scheduled Fabric pipeline** (Thu 29 afternoon + Fri 30 Oct, 3–4.5 h): `10 → 20 → 30 → 31` as notebook
+- [x] **Scheduled Fabric pipeline** (Thu 29 afternoon + Fri 30 Oct, 3–4.5 h): `10 → 20 → 30 → 31` as notebook
       activities, `LOOKBACK_DAYS` as a parameter, schedule, **email alert on failure**. Open on Fri: run
       frequency (Cito free tier 500 calls/month) and a periodic full refresh (`LOOKBACK_DAYS = None`).
+      **Done 2026-11-01** (decisions.md): `pipeline_cito_refresh`, weekly Monday, `lookback_days` (-1 = full
+      refresh, by hand), failure alert as ntfy push (no mailbox for email), tested with a real failure.
+      Still to see: the first unattended scheduled run, Mon 2 Nov.
 - [ ] **Two decisions** (Fri 30 Oct, else Mon morning): dashboard tool (Power BI vs Evidence) and how the
       public/private split is done.
 - [ ] **Dashboard redesign** (Mon 2 – Tue 3 Nov morning).
