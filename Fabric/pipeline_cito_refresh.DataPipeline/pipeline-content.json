@@ -1,86 +1,155 @@
 {
   "properties": {
-    "description": "Cito refresh: 10_ingest_cito -> 20_clean_cito -> 30_warehouse_dims -> 30_warehouse_fact_round. lookback_days: 35 = incremental, -1 = full refresh.",
     "activities": [
       {
-        "name": "nb_10_ingest",
         "type": "TridentNotebook",
-        "dependsOn": [],
-        "policy": {
-          "timeout": "0.01:00:00",
-          "retry": 0,
-          "retryIntervalInSeconds": 30,
-          "secureOutput": false,
-          "secureInput": false
-        },
         "typeProperties": {
           "notebookId": "6f10bc48-cda2-93e6-4afc-4b3fcbe55e93",
           "workspaceId": "00000000-0000-0000-0000-000000000000"
-        }
-      },
-      {
-        "name": "nb_20_clean",
-        "type": "TridentNotebook",
-        "dependsOn": [
-          { "activity": "nb_10_ingest", "dependencyConditions": [ "Succeeded" ] }
-        ],
+        },
         "policy": {
           "timeout": "0.01:00:00",
           "retry": 0,
           "retryIntervalInSeconds": 30,
-          "secureOutput": false,
-          "secureInput": false
+          "secureInput": false,
+          "secureOutput": false
         },
+        "name": "nb_10_ingest",
+        "dependsOn": []
+      },
+      {
+        "type": "TridentNotebook",
         "typeProperties": {
           "notebookId": "5efe1016-6dc6-84ac-4392-b5b396103902",
           "workspaceId": "00000000-0000-0000-0000-000000000000",
           "parameters": {
             "LOOKBACK_DAYS": {
-              "value": { "value": "@pipeline().parameters.lookback_days", "type": "Expression" },
+              "value": {
+                "value": "@pipeline().parameters.lookback_days",
+                "type": "Expression"
+              },
               "type": "int"
             }
           }
-        }
-      },
-      {
-        "name": "nb_30_dims",
-        "type": "TridentNotebook",
-        "dependsOn": [
-          { "activity": "nb_20_clean", "dependencyConditions": [ "Succeeded" ] }
-        ],
+        },
         "policy": {
           "timeout": "0.01:00:00",
           "retry": 0,
           "retryIntervalInSeconds": 30,
-          "secureOutput": false,
-          "secureInput": false
+          "secureInput": false,
+          "secureOutput": false
         },
+        "name": "nb_20_clean",
+        "dependsOn": [
+          {
+            "activity": "nb_10_ingest",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
         "typeProperties": {
           "notebookId": "9d16e9d2-9b67-ba31-48a4-2ec02360e722",
           "workspaceId": "00000000-0000-0000-0000-000000000000"
-        }
-      },
-      {
-        "name": "nb_31_fact",
-        "type": "TridentNotebook",
-        "dependsOn": [
-          { "activity": "nb_30_dims", "dependencyConditions": [ "Succeeded" ] }
-        ],
+        },
         "policy": {
           "timeout": "0.01:00:00",
           "retry": 0,
           "retryIntervalInSeconds": 30,
-          "secureOutput": false,
-          "secureInput": false
+          "secureInput": false,
+          "secureOutput": false
         },
+        "name": "nb_30_dims",
+        "dependsOn": [
+          {
+            "activity": "nb_20_clean",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
         "typeProperties": {
           "notebookId": "2607f8ab-df5d-a4bc-4791-c461cde97a6d",
           "workspaceId": "00000000-0000-0000-0000-000000000000"
-        }
+        },
+        "policy": {
+          "timeout": "0.01:00:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_31_fact",
+        "dependsOn": [
+          {
+            "activity": "nb_30_dims",
+            "dependencyConditions": [
+              "Succeeded"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "TridentNotebook",
+        "typeProperties": {
+          "notebookId": "0cef7bbc-c6f5-959d-4998-9d3a226f47f9",
+          "workspaceId": "00000000-0000-0000-0000-000000000000",
+          "parameters": {
+            "RUN_ID": {
+              "value": {
+                "value": "@pipeline().RunId",
+                "type": "Expression"
+              },
+              "type": "string"
+            }
+          }
+        },
+        "policy": {
+          "timeout": "0.0:10:00",
+          "retry": 0,
+          "retryIntervalInSeconds": 30,
+          "secureInput": false,
+          "secureOutput": false
+        },
+        "name": "nb_90_alert",
+        "dependsOn": [
+          {
+            "activity": "nb_31_fact",
+            "dependencyConditions": [
+              "Failed",
+              "Skipped"
+            ]
+          }
+        ]
+      },
+      {
+        "type": "Fail",
+        "typeProperties": {
+          "message": "Pipeline failed - see alert and Monitor",
+          "errorCode": "1"
+        },
+        "name": "pl_failure",
+        "dependsOn": [
+          {
+            "activity": "nb_90_alert",
+            "dependencyConditions": [
+              "Completed"
+            ]
+          }
+        ]
       }
     ],
     "parameters": {
-      "lookback_days": { "type": "int", "defaultValue": 35 }
+      "lookback_days": {
+        "type": "int",
+        "defaultValue": 35
+      }
     }
   }
 }

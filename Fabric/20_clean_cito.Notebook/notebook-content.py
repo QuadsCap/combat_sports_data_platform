@@ -804,6 +804,9 @@ print("orphan cito_ fighters deleted:", len(orphans))
 for t in ["silv_event", "silv_fight", "silv_round", "silv_fighter", "silv_fighter_xref"]:
     print(t); spark.read.table(S + t).groupBy("source").count().show()
 
+# A fight OUTSIDE the scope still carrying a cito_ ID the xref no longer uses was not
+# re-processed: its fighter would split into two identities. Only a full refresh fixes it.
+stale = fight_ids.filter(F.col("fighter_id").startswith("cito_")).join(xref_ids, "fighter_id", "left_anti").count()
     
 print("fights with a stale cito_ fighter_id:", stale, "" if stale == 0 else "-> FULL REFRESH NEEDED (cell 0: LOOKBACK_DAYS = -1)")
 # Silver is already written at this point; the raise stops 30/31 building gold on it
