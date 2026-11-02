@@ -205,10 +205,14 @@ the date.**
       frequency (Cito free tier 500 calls/month) and a periodic full refresh (`LOOKBACK_DAYS = None`).
       **Done 2026-11-01** (decisions.md): `pipeline_cito_refresh`, weekly Monday, `lookback_days` (-1 = full
       refresh, by hand), failure alert as ntfy push (no mailbox for email), tested with a real failure.
-      Still to see: the first unattended scheduled run, Mon 2 Nov.
-- [ ] **Two decisions** (Fri 30 Oct, else Mon morning): dashboard tool (Power BI vs Evidence) and how the
-      public/private split is done.
-- [ ] **Dashboard redesign** (Mon 2 – Tue 3 Nov morning).
+      First unattended scheduled run Mon 2 Nov 12:00: Succeeded.
+- [x] **Two decisions** (Fri 30 Oct, else Mon morning): dashboard tool (Power BI vs Evidence) and how the
+      public/private split is done. **Dashboard tool decided 2026-11-01** (decisions.md): Power BI + "Publish to
+      web", linked from the README. **Split decided 2026-11-02** (decisions.md): baseline public, Phase 3+ model
+      private. Still to check: who holds the Fabric admin role (Publish to web needs the tenant setting).
+- [ ] **Dashboard redesign** (Mon 2 – Tue 3 Nov morning). Scope frozen 2026-11-02 (decisions.md): the
+      discussed redesign + a fighter search page, nothing more; head-to-head parked. Published = the
+      recruiter-facing version.
 - [ ] **GitHub packaging** (Tue 3 Nov): README with the Phase 1–2 story, one architecture diagram,
       screenshots, repo cleanup.
 - [ ] **Public/private split executed + gate check** (Wed 4 Nov).
