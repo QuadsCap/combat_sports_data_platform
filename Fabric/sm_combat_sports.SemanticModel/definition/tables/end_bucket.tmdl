@@ -1,12 +1,14 @@
 table end_bucket
 
 	column bucket
+		dataType: string
 		summarizeBy: none
 		isNameInferred
 		sourceColumn: [bucket]
 		sortByColumn: sort
 
 	column sort
+		dataType: int64
 		formatString: 0
 		summarizeBy: none
 		isNameInferred

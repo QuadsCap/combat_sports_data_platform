@@ -365,6 +365,14 @@ table fact_round
 	measure Method_Share_Colour = IF ( [Method_Share] >= [Method_Share_Avg], "#5CC9A0", "#EE8F6E" )
 		displayFolder: Overall trends
 
+	measure Method_Share_Above = IF ( [Method_Share] >= [Method_Share_Avg], [Method_Share] )
+		formatString: 0%
+		displayFolder: Overall trends
+
+	measure Method_Share_Below = IF ( [Method_Share] < [Method_Share_Avg], [Method_Share] )
+		formatString: 0%
+		displayFolder: Overall trends
+
 	measure Method_Share_Title =
 			IF (
 				ISFILTERED ( dim_fight[method] ),

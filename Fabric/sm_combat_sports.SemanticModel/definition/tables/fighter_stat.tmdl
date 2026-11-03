@@ -1,12 +1,14 @@
 table fighter_stat
 
 	column stat_group
+		dataType: string
 		summarizeBy: none
 		isNameInferred
 		sourceColumn: [stat_group]
 		sortByColumn: group_sort
 
 	column group_sort
+		dataType: int64
 		formatString: 0
 		summarizeBy: none
 		isNameInferred
@@ -14,12 +16,14 @@ table fighter_stat
 		sourceColumn: [group_sort]
 
 	column stat
+		dataType: string
 		summarizeBy: none
 		isNameInferred
 		sourceColumn: [stat]
 		sortByColumn: sort
 
 	column sort
+		dataType: int64
 		formatString: 0
 		summarizeBy: none
 		isNameInferred
@@ -27,6 +31,7 @@ table fighter_stat
 		sourceColumn: [sort]
 
 	column fmt
+		dataType: string
 		summarizeBy: none
 		isNameInferred
 		isHidden

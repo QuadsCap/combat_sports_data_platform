@@ -10,7 +10,7 @@
     "tabOrder": 2000
   },
   "visual": {
-    "visualType": "clusteredColumnChart",
+    "visualType": "columnChart",
     "query": {
       "queryState": {
         "Category": {
@@ -42,12 +42,27 @@
                       "Entity": "fact_round"
                     }
                   },
-                  "Property": "Method_Share"
+                  "Property": "Method_Share_Above"
                 }
               },
-              "queryRef": "fact_round.Method_Share",
-              "nativeQueryRef": "Method_Share",
-              "displayName": "Share of fights"
+              "queryRef": "fact_round.Method_Share_Above",
+              "nativeQueryRef": "Method_Share_Above",
+              "displayName": "Above average"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_round"
+                    }
+                  },
+                  "Property": "Method_Share_Below"
+                }
+              },
+              "queryRef": "fact_round.Method_Share_Below",
+              "nativeQueryRef": "Method_Share_Below",
+              "displayName": "Below average"
             }
           ]
         }
@@ -125,6 +140,33 @@
           }
         }
       ],
+      "legend": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "position": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Top'"
+                }
+              }
+            },
+            "showTitle": {
+              "expr": {
+                "Literal": {
+                  "Value": "false"
+                }
+              }
+            }
+          }
+        }
+      ],
       "dataPoint": [
         {
           "properties": {
@@ -132,13 +174,8 @@
               "solid": {
                 "color": {
                   "expr": {
-                    "Measure": {
-                      "Expression": {
-                        "SourceRef": {
-                          "Entity": "fact_round"
-                        }
-                      },
-                      "Property": "Method_Share_Colour"
+                    "Literal": {
+                      "Value": "'#5CC9A0'"
                     }
                   }
                 }
@@ -146,13 +183,25 @@
             }
           },
           "selector": {
-            "data": [
-              {
-                "dataViewWildcard": {
-                  "matchingOption": 1
+            "metadata": "fact_round.Method_Share_Above"
+          }
+        },
+        {
+          "properties": {
+            "fill": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#EE8F6E'"
+                    }
+                  }
                 }
               }
-            ]
+            }
+          },
+          "selector": {
+            "metadata": "fact_round.Method_Share_Below"
           }
         }
       ]
