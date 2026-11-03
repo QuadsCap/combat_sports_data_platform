@@ -350,9 +350,11 @@ table fact_round
 		displayFolder: Overall trends
 
 	measure Method_Share_Avg =
-			// Average over the weight classes the chart shows (same exclusions as its visual filter)
+			// Average over the weight classes the chart shows (same exclusions as its visual filter).
+			// weight_class_sort is cleared too: visuals sorted by weight_class also group by it.
 			CALCULATE (
 				[Method_Share],
+				REMOVEFILTERS ( dim_fight[weight_class_sort] ),
 				FILTER (
 					ALL ( dim_fight[weight_class] ),
 					NOT ( dim_fight[weight_class] IN { "Women's Featherweight", "Catchweight", "Open Weight" } )

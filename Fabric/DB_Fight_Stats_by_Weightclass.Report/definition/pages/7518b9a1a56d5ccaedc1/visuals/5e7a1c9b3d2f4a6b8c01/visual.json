@@ -41,20 +41,7 @@
             "mode": {
               "expr": {
                 "Literal": {
-                  "Value": "'Basic'"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "general": [
-        {
-          "properties": {
-            "orientation": {
-              "expr": {
-                "Literal": {
-                  "Value": "1D"
+                  "Value": "'Dropdown'"
                 }
               }
             }
@@ -109,7 +96,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Method (none selected = all finishes)'"
+                  "Value": "'Method (All = finish rate, Ctrl+click for several)'"
                 }
               }
             },
