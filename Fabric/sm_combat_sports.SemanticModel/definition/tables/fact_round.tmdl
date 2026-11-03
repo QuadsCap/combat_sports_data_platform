@@ -310,8 +310,8 @@ table fact_round
 					TRUE (),
 					NOT ISINSCOPE ( dim_fight[weight_class] ) || NOT ISINSCOPE ( age_band[band] ), "#2A2F36",
 					ISBLANK ( v ) || ISBLANK ( r ), BLANK (),
-					r >= 1.2, "#5AA9E6",
-					r > 1.05, "#A9D2F0",
+					r >= 1.2, "#5CC9A0",
+					r > 1.05, "#B5E6D2",
 					r <= 0.8, "#EE8F6E",
 					r < 0.95, "#F6C1AA",
 					"#F4F0E8"
@@ -362,7 +362,7 @@ table fact_round
 		formatString: 0%
 		displayFolder: Overall trends
 
-	measure Method_Share_Colour = IF ( [Method_Share] >= [Method_Share_Avg], "#5AA9E6", "#EE8F6E" )
+	measure Method_Share_Colour = IF ( [Method_Share] >= [Method_Share_Avg], "#5CC9A0", "#EE8F6E" )
 		displayFolder: Overall trends
 
 	measure Method_Share_Title =
@@ -373,7 +373,7 @@ table fact_round
 			)
 		displayFolder: Overall trends
 
-	measure Method_Share_Subtitle = "Blue = above, orange = below the average of these weight classes (" & FORMAT ( [Method_Share_Avg], "0%" ) & ")"
+	measure Method_Share_Subtitle = "Green = above, orange = below the average of these weight classes (" & FORMAT ( [Method_Share_Avg], "0%" ) & ")"
 		displayFolder: Overall trends
 
 	column fight_key
