@@ -60,6 +60,31 @@ table fact_round
 
 		changedProperty = IsHidden
 
+	measure 'Fight_Duration (Minutes)' =
+			
+			DIVIDE(
+			    SUMX(
+			        FILTER(
+			            fact_round,
+			            NOT(fact_round[stats_missing])
+			        ),
+			        VAR FinishRound = RELATED(dim_fight[finish_round])
+			        VAR FinishTime = RELATED(dim_fight[finish_time_sec])
+			        RETURN
+			            IF(
+			                fact_round[round] = FinishRound,
+			                FinishTime,
+			                300
+			            )
+			    ),
+			    60
+			)
+		lineageTag: 031344cc-6fdd-4067-8a5d-72c025a44644
+
+		changedProperty = Name
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
 	column fight_key
 		dataType: string
 		lineageTag: 74380940-ba44-4262-9196-db3ef9b53508

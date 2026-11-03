@@ -211,7 +211,6 @@
         }
       ]
     },
-    "drillFilterOtherVisuals": true,
     "visualContainerObjects": {
       "title": [
         {
@@ -253,7 +252,8 @@
           }
         }
       ]
-    }
+    },
+    "drillFilterOtherVisuals": true
   },
   "filterConfig": {
     "filters": [
@@ -406,48 +406,6 @@
             }
           ]
         }
-      },
-      {
-        "name": "9a8bfb6474241ad19d3e",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "model_baseline_predictions"
-              }
-            },
-            "Property": "Fight Label"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "b33157e8f94fd5f7f46e",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "model_baseline_predictions"
-              }
-            },
-            "Property": "Wrong Pick Confidence"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "1fa8c43c4bacbd162fd7",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "model_baseline_predictions"
-              }
-            },
-            "Property": "event_date"
-          }
-        },
-        "type": "Categorical"
       }
     ]
   }
