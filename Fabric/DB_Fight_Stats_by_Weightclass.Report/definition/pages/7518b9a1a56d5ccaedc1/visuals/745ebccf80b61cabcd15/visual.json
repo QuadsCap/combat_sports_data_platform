@@ -2,15 +2,15 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "745ebccf80b61cabcd15",
   "position": {
-    "x": 1176,
-    "y": 104,
+    "x": 32,
+    "y": 628,
     "z": 2000,
-    "height": 800,
-    "width": 712,
+    "height": 384,
+    "width": 1856,
     "tabOrder": 2000
   },
   "visual": {
-    "visualType": "clusteredBarChart",
+    "visualType": "clusteredColumnChart",
     "query": {
       "queryState": {
         "Category": {
@@ -39,17 +39,36 @@
                 "Measure": {
                   "Expression": {
                     "SourceRef": {
-                      "Entity": "dim_fight"
+                      "Entity": "fact_round"
                     }
                   },
-                  "Property": "Finish_Rate"
+                  "Property": "Method_Share"
                 }
               },
-              "queryRef": "dim_fight.Finish_Rate",
-              "nativeQueryRef": "Finish_Rate"
+              "queryRef": "fact_round.Method_Share",
+              "nativeQueryRef": "Method_Share",
+              "displayName": "Share of fights"
             }
           ]
         }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Column": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "dim_fight"
+                  }
+                },
+                "Property": "weight_class"
+              }
+            },
+            "direction": "Ascending"
+          }
+        ],
+        "isDefaultSort": false
       }
     },
     "objects": {
@@ -113,13 +132,27 @@
               "solid": {
                 "color": {
                   "expr": {
-                    "Literal": {
-                      "Value": "'#7B6FDB'"
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "fact_round"
+                        }
+                      },
+                      "Property": "Method_Share_Colour"
                     }
                   }
                 }
               }
             }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ]
           }
         }
       ]
@@ -138,8 +171,38 @@
             },
             "text": {
               "expr": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_round"
+                    }
+                  },
+                  "Property": "Method_Share_Title"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "subTitle": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
                 "Literal": {
-                  "Value": "'Finish rate by weight class'"
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "fact_round"
+                    }
+                  },
+                  "Property": "Method_Share_Subtitle"
                 }
               }
             }
@@ -209,6 +272,13 @@
                           {
                             "Literal": {
                               "Value": "'Open Weight'"
+                            }
+                          }
+                        ],
+                        [
+                          {
+                            "Literal": {
+                              "Value": "null"
                             }
                           }
                         ]

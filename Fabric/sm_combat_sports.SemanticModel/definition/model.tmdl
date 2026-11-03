@@ -21,4 +21,6 @@ ref table model_baseline_metrics
 ref table model_baseline_predictions
 ref table age_band
 ref table model_baseline_calibration
+ref table fighter_stat
+ref table end_bucket
 

@@ -2,11 +2,11 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "c0a1e5d2b7f3486a9e02",
   "position": {
-    "x": 1176,
-    "y": 916,
+    "x": 32,
+    "y": 1018,
     "z": 4000,
-    "height": 110,
-    "width": 712,
+    "height": 40,
+    "width": 1856,
     "tabOrder": 4000
   },
   "visual": {
@@ -19,7 +19,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "Finish = KO/TKO + Submission over all fights · unified era · sorted by rate",
+                    "value": "Share of all fights ending by the selected method · no selection = finish rate (KO/TKO + Submission) · unified era · weight classes in the same order as the matrix",
                     "textStyle": {
                       "fontSize": "10pt",
                       "color": "#9AA0A8"

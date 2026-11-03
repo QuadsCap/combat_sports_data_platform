@@ -60,30 +60,310 @@ table fact_round
 
 		changedProperty = IsHidden
 
-	measure 'Fight_Duration (Minutes)' =
-			
-			DIVIDE(
-			    SUMX(
-			        FILTER(
-			            fact_round,
-			            NOT(fact_round[stats_missing])
-			        ),
-			        VAR FinishRound = RELATED(dim_fight[finish_round])
-			        VAR FinishTime = RELATED(dim_fight[finish_time_sec])
-			        RETURN
-			            IF(
-			                fact_round[round] = FinishRound,
-			                FinishTime,
-			                300
-			            )
-			    ),
-			    60
+	measure Fight_Minutes =
+			// Minutes fought: full 300 s per round, finish_time_sec in the finish round; rounds without stats excluded
+			DIVIDE (
+				SUMX (
+					FILTER ( fact_round, NOT fact_round[stats_missing] ),
+					VAR FinishRound = RELATED ( dim_fight[finish_round] )
+					VAR FinishTime = RELATED ( dim_fight[finish_time_sec] )
+					RETURN
+						IF ( fact_round[round] = FinishRound, FinishTime, 300 )
+				),
+				60
 			)
-		lineageTag: 031344cc-6fdd-4067-8a5d-72c025a44644
+		formatString: 0.0
+		displayFolder: Fighter page
 
-		changedProperty = Name
+	measure F_Selected = HASONEVALUE ( dim_fighter[display_name] )
+		displayFolder: Fighter page
 
-		annotation PBI_FormatHint = {"isGeneralNumber":true}
+	measure F_Name = IF ( [F_Selected], SELECTEDVALUE ( dim_fighter[display_name] ), "Pick a fighter" )
+		displayFolder: Fighter page
+
+	measure F_Fights = IF ( [F_Selected], DISTINCTCOUNT ( fact_round[fight_key] ) )
+		formatString: 0
+		displayFolder: Fighter page
+
+	measure F_Record =
+			IF (
+				[F_Selected],
+				VAR w = CALCULATE ( DISTINCTCOUNT ( fact_round[fight_key] ), fact_round[won] = 1 )
+				VAR l = CALCULATE ( DISTINCTCOUNT ( fact_round[fight_key] ), fact_round[won] = 0, dim_fight[outcome] = "win" )
+				VAR d = CALCULATE ( DISTINCTCOUNT ( fact_round[fight_key] ), dim_fight[outcome] = "draw" )
+				VAR nc = CALCULATE ( DISTINCTCOUNT ( fact_round[fight_key] ), dim_fight[outcome] = "no_contest" )
+				RETURN
+					( w + 0 ) & "–" & ( l + 0 ) & "–" & ( d + 0 ) & IF ( nc > 0, "  (" & nc & " NC)" )
+			)
+		displayFolder: Fighter page
+
+	measure F_Sample_Label =
+			VAR n = [F_Fights]
+			RETURN
+				SWITCH (
+					TRUE (),
+					ISBLANK ( n ), BLANK (),
+					n < 5, "Small sample · read with caution",
+					n < 10, "Moderate sample",
+					"Solid sample"
+				)
+		displayFolder: Fighter page
+
+	measure F_Sample_Colour = IF ( [F_Fights] < 5, "#EE8F6E", "#9AA0A8" )
+		displayFolder: Fighter page
+
+	measure F_Streak =
+			// Current streak: no contests are skipped, a draw ends a streak
+			IF (
+				[F_Selected],
+				VAR t =
+					ADDCOLUMNS (
+						SUMMARIZE (
+							FILTER ( fact_round, RELATED ( dim_fight[outcome] ) <> "no_contest" ),
+							fact_round[fight_key],
+							fact_round[date_key],
+							dim_fight[outcome]
+						),
+						"@res",
+							IF (
+								dim_fight[outcome] = "draw",
+								"D",
+								IF ( CALCULATE ( MAX ( fact_round[won] ) ) = 1, "W", "L" )
+							)
+					)
+				VAR lastDate = MAXX ( t, fact_round[date_key] )
+				VAR lastRes = MAXX ( FILTER ( t, fact_round[date_key] = lastDate ), [@res] )
+				VAR breakDate = MAXX ( FILTER ( t, [@res] <> lastRes ), fact_round[date_key] )
+				VAR n = COUNTROWS ( FILTER ( t, fact_round[date_key] > breakDate ) )
+				RETURN
+					SWITCH (
+						lastRes,
+						"W", n & IF ( n = 1, " win", " wins" ),
+						"L", n & IF ( n = 1, " loss", " losses" ),
+						"D", n & IF ( n = 1, " draw", " draws" )
+					)
+			)
+		displayFolder: Fighter page
+
+	measure Latest_Weight_Class =
+			// Weight class of the fighter's latest fight, skipping Catchweight / Open Weight
+			IF (
+				[F_Selected],
+				VAR t =
+					FILTER (
+						fact_round,
+						NOT ( RELATED ( dim_fight[weight_class] ) IN { "Catchweight", "Open Weight" } )
+							&& NOT ISBLANK ( RELATED ( dim_fight[weight_class] ) )
+					)
+				VAR lastDate = MAXX ( t, fact_round[date_key] )
+				RETURN
+					MAXX ( FILTER ( t, fact_round[date_key] = lastDate ), RELATED ( dim_fight[weight_class] ) )
+			)
+		displayFolder: Fighter page
+
+	measure F_Pairs = COUNTROWS ( SUMMARIZE ( FILTER ( fact_round, NOT fact_round[stats_missing] ), fact_round[fight_key], fact_round[fighter_key] ) )
+		formatString: 0
+		displayFolder: Fighter page
+
+	measure F_Pairs_All = COUNTROWS ( SUMMARIZE ( fact_round, fact_round[fight_key], fact_round[fighter_key] ) )
+		formatString: 0
+		displayFolder: Fighter page
+
+	measure Stat_Core =
+			// Value of the fighter_stat row in the current filter context (one fighter, or a whole division)
+			VAR s = SELECTEDVALUE ( fighter_stat[sort] )
+			VAR ok = FILTER ( fact_round, NOT fact_round[stats_missing] )
+			VAR mins = [Fight_Minutes]
+			VAR sig = SUMX ( ok, fact_round[sig_strikes_succ] )
+			VAR sigAtt = SUMX ( ok, fact_round[sig_strikes_att] )
+			VAR td = SUMX ( ok, fact_round[td_succ] )
+			VAR tdAtt = SUMX ( ok, fact_round[td_att] )
+			VAR ctrl = SUMX ( ok, fact_round[ctrl_sec] )
+			VAR dist = SUMX ( ok, fact_round[distance_succ] )
+			VAR clinch = SUMX ( ok, fact_round[clinch_succ] )
+			VAR ground = SUMX ( ok, fact_round[ground_succ] )
+			VAR oppSig =
+				CALCULATE (
+					SUMX ( FILTER ( fact_round, NOT fact_round[stats_missing] ), fact_round[sig_strikes_succ] ),
+					USERELATIONSHIP ( fact_round[opponent_key], dim_fighter[fighter_key] )
+				)
+			VAR oppCtrl =
+				CALCULATE (
+					SUMX ( FILTER ( fact_round, NOT fact_round[stats_missing] ), fact_round[ctrl_sec] ),
+					USERELATIONSHIP ( fact_round[opponent_key], dim_fighter[fighter_key] )
+				)
+			RETURN
+				SWITCH (
+					s,
+					1, DIVIDE ( mins, [F_Pairs] ),
+					2, DIVIDE ( CALCULATE ( [F_Pairs_All], dim_fight[method] IN { "KO/TKO", "Submission" } ) + 0, [F_Pairs_All] ),
+					3, DIVIDE ( sig, mins ) * 15,
+					4, DIVIDE ( oppSig, mins ) * 15,
+					5, DIVIDE ( sig, sigAtt ),
+					6, DIVIDE ( td, mins ) * 15,
+					7, DIVIDE ( td, tdAtt ),
+					8, DIVIDE ( ctrl, mins * 60 ),
+					9, DIVIDE ( oppCtrl, mins * 60 ),
+					10, DIVIDE ( dist, sig ),
+					11, DIVIDE ( clinch, sig ),
+					12, DIVIDE ( ground, sig )
+				)
+		displayFolder: Fighter page
+
+	measure Stat_Fighter = IF ( [F_Selected], [Stat_Core] )
+		formatStringDefinition = SWITCH ( SELECTEDVALUE ( fighter_stat[fmt] ), "pct", "0%", "min", "0.0 ""min""", "0.0" )
+		displayFolder: Fighter page
+
+	measure Stat_Division =
+			IF (
+				[F_Selected],
+				VAR wc = [Latest_Weight_Class]
+				RETURN
+					CALCULATE ( [Stat_Core], REMOVEFILTERS ( dim_fighter ), dim_fight[weight_class] = wc )
+			)
+		formatStringDefinition = SWITCH ( SELECTEDVALUE ( fighter_stat[fmt] ), "pct", "0%", "min", "0.0 ""min""", "0.0" )
+		displayFolder: Fighter page
+
+	measure Stat_Colour =
+			VAR f = [Stat_Fighter]
+			VAR d = [Stat_Division]
+			RETURN
+				IF (
+					NOT ISBLANK ( f ) && NOT ISBLANK ( d ),
+					SWITCH ( TRUE (), ROUND ( f, 3 ) > ROUND ( d, 3 ), "#5AA9E6", ROUND ( f, 3 ) < ROUND ( d, 3 ), "#EE8F6E", "#F4F0E8" )
+				)
+		displayFolder: Fighter page
+
+	measure End_Core =
+			// Share of fighter-fights ending in the end_bucket row (rounds = stoppages, last row = decisions)
+			VAR b = SELECTEDVALUE ( end_bucket[sort] )
+			VAR n = [F_Pairs_All]
+			VAR k =
+				SWITCH (
+					b,
+					1, CALCULATE ( [F_Pairs_All], dim_fight[method] <> "Decision", dim_fight[finish_round] = 1 ),
+					2, CALCULATE ( [F_Pairs_All], dim_fight[method] <> "Decision", dim_fight[finish_round] = 2 ),
+					3, CALCULATE ( [F_Pairs_All], dim_fight[method] <> "Decision", dim_fight[finish_round] = 3 ),
+					4, CALCULATE ( [F_Pairs_All], dim_fight[method] <> "Decision", dim_fight[finish_round] >= 4 ),
+					5, CALCULATE ( [F_Pairs_All], dim_fight[method] = "Decision" )
+				)
+			RETURN
+				IF ( n > 0, DIVIDE ( k + 0, n ) )
+		formatString: 0%
+		displayFolder: Fighter page
+
+	measure End_Share_Fighter = IF ( [F_Selected], [End_Core] )
+		formatString: 0%
+		displayFolder: Fighter page
+
+	measure End_Share_Division =
+			IF (
+				[F_Selected],
+				VAR wc = [Latest_Weight_Class]
+				RETURN
+					CALCULATE ( [End_Core], REMOVEFILTERS ( dim_fighter ), dim_fight[weight_class] = wc )
+			)
+		formatString: 0%
+		displayFolder: Fighter page
+
+	measure F_Wins_By_Method = IF ( [F_Selected], CALCULATE ( DISTINCTCOUNT ( fact_round[fight_key] ), fact_round[won] = 1 ) )
+		formatString: 0
+		displayFolder: Fighter page
+
+	measure Win_Rate_Method =
+			// No method selected = win rate; method(s) selected = wins by that method / all decided fighter-fights
+			VAR n = CALCULATE ( [Fighter_Fights], REMOVEFILTERS ( dim_fight[method] ) )
+			RETURN
+				IF ( n >= 30, DIVIDE ( [Wins] + 0, n ) )
+		formatString: 0%
+		displayFolder: Overall trends
+
+	measure Win_Rate_Method_Label =
+			VAR n = CALCULATE ( [Fighter_Fights], REMOVEFILTERS ( dim_fight[method] ) )
+			RETURN
+				SWITCH (
+					TRUE (),
+					n = 0 || ISBLANK ( n ), BLANK (),
+					n < 30, "n < 30",
+					FORMAT ( [Win_Rate_Method], "0%" ) & " · n " & n
+				)
+		displayFolder: Overall trends
+
+	measure Win_Rate_Method_Avg =
+			CALCULATE (
+				DIVIDE ( [Wins] + 0, CALCULATE ( [Fighter_Fights], REMOVEFILTERS ( dim_fight[method] ) ) ),
+				ALLSELECTED ( dim_fight[weight_class] ),
+				REMOVEFILTERS ( age_band )
+			)
+		formatString: 0%
+		displayFolder: Overall trends
+
+	measure Win_Rate_Method_Colour =
+			// Cell vs the average of all visible cells; totals get a flat grey
+			VAR v = [Win_Rate_Method]
+			VAR a = [Win_Rate_Method_Avg]
+			VAR r = DIVIDE ( v, a )
+			RETURN
+				SWITCH (
+					TRUE (),
+					NOT ISINSCOPE ( dim_fight[weight_class] ) || NOT ISINSCOPE ( age_band[band] ), "#2A2F36",
+					ISBLANK ( v ) || ISBLANK ( r ), BLANK (),
+					r >= 1.2, "#5AA9E6",
+					r > 1.05, "#A9D2F0",
+					r <= 0.8, "#EE8F6E",
+					r < 0.95, "#F6C1AA",
+					"#F4F0E8"
+				)
+		displayFolder: Overall trends
+
+	measure Win_Rate_Method_Font =
+			SWITCH (
+				TRUE (),
+				NOT ISINSCOPE ( dim_fight[weight_class] ) || NOT ISINSCOPE ( age_band[band] ), "#F2F3F5",
+				ISBLANK ( [Win_Rate_Method] ), "#9AA0A8",
+				"#16191E"
+			)
+		displayFolder: Overall trends
+
+	measure Win_Rate_Title =
+			IF (
+				ISFILTERED ( dim_fight[method] ),
+				"Wins by " & CONCATENATEX ( VALUES ( dim_fight[method] ), dim_fight[method], " + " ) & " as a share of all fights · age band × weight class",
+				"Win rate by age band × weight class"
+			)
+		displayFolder: Overall trends
+
+	measure Method_Share =
+			// No method selected = finish rate (KO/TKO + Submission); otherwise share of fights ending by the selected method(s)
+			VAR allFights = CALCULATE ( DISTINCTCOUNT ( fact_round[fight_key] ), REMOVEFILTERS ( dim_fight[method] ) )
+			VAR k =
+				IF (
+					ISFILTERED ( dim_fight[method] ),
+					DISTINCTCOUNT ( fact_round[fight_key] ),
+					CALCULATE ( DISTINCTCOUNT ( fact_round[fight_key] ), dim_fight[method] IN { "KO/TKO", "Submission" } )
+				)
+			RETURN
+				DIVIDE ( k + 0, allFights )
+		formatString: 0%
+		displayFolder: Overall trends
+
+	measure Method_Share_Avg = CALCULATE ( [Method_Share], ALLSELECTED ( dim_fight[weight_class] ) )
+		formatString: 0%
+		displayFolder: Overall trends
+
+	measure Method_Share_Colour = IF ( [Method_Share] >= [Method_Share_Avg], "#5AA9E6", "#EE8F6E" )
+		displayFolder: Overall trends
+
+	measure Method_Share_Title =
+			IF (
+				ISFILTERED ( dim_fight[method] ),
+				CONCATENATEX ( VALUES ( dim_fight[method] ), dim_fight[method], " + " ) & " rate by weight class",
+				"Finish rate (KO/TKO + Submission) by weight class"
+			)
+		displayFolder: Overall trends
+
+	measure Method_Share_Subtitle = "Blue = above, orange = below the average of these weight classes (" & FORMAT ( [Method_Share_Avg], "0%" ) & ")"
+		displayFolder: Overall trends
 
 	column fight_key
 		dataType: string

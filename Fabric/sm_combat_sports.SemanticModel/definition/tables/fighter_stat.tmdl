@@ -1,0 +1,55 @@
+table fighter_stat
+
+	column stat_group
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [stat_group]
+		sortByColumn: group_sort
+
+	column group_sort
+		formatString: 0
+		summarizeBy: none
+		isNameInferred
+		isHidden
+		sourceColumn: [group_sort]
+
+	column stat
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [stat]
+		sortByColumn: sort
+
+	column sort
+		formatString: 0
+		summarizeBy: none
+		isNameInferred
+		isHidden
+		sourceColumn: [sort]
+
+	column fmt
+		summarizeBy: none
+		isNameInferred
+		isHidden
+		sourceColumn: [fmt]
+
+	partition fighter_stat = calculated
+		mode: import
+		source =
+				DATATABLE (
+					"stat_group", STRING, "group_sort", INTEGER, "stat", STRING, "sort", INTEGER, "fmt", STRING,
+					{
+						{ "Fight profile", 1, "Avg fight length", 1, "min" },
+						{ "Fight profile", 1, "Finish rate", 2, "pct" },
+						{ "Striking", 2, "Sig. strikes landed / 15 min", 3, "rate" },
+						{ "Striking", 2, "Sig. strikes absorbed / 15 min", 4, "rate" },
+						{ "Striking", 2, "Sig. strike accuracy", 5, "pct" },
+						{ "Grappling", 3, "Takedowns / 15 min", 6, "rate" },
+						{ "Grappling", 3, "Takedown accuracy", 7, "pct" },
+						{ "Grappling", 3, "Control time", 8, "pct" },
+						{ "Grappling", 3, "Controlled time", 9, "pct" },
+						{ "Where sig. strikes land", 4, "Distance", 10, "pct" },
+						{ "Where sig. strikes land", 4, "Clinch", 11, "pct" },
+						{ "Where sig. strikes land", 4, "Ground", 12, "pct" }
+					}
+				)
+

@@ -1,0 +1,29 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "b1f2c3d4e5f6a7b8c905",
+  "position": { "x": 1180, "y": 104, "z": 1300, "height": 140, "width": 300, "tabOrder": 1300 },
+  "visual": {
+    "visualType": "card",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "fact_round" } }, "Property": "F_Streak" } },
+              "queryRef": "fact_round.F_Streak",
+              "nativeQueryRef": "F_Streak"
+            }
+          ]
+        }
+      }
+    },
+    "objects": {
+      "labels": [ { "properties": { "fontSize": { "expr": { "Literal": { "Value": "28D" } } }, "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#F2F3F5'" } } } } } } } ],
+      "categoryLabels": [ { "properties": { "show": { "expr": { "Literal": { "Value": "false" } } } } } ]
+    },
+    "visualContainerObjects": {
+      "title": [ { "properties": { "show": { "expr": { "Literal": { "Value": "true" } } }, "text": { "expr": { "Literal": { "Value": "'Current streak'" } } } } } ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

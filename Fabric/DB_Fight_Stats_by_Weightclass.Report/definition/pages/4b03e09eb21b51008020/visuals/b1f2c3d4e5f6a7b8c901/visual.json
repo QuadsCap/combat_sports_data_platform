@@ -1,0 +1,15 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
+  "name": "b1f2c3d4e5f6a7b8c901",
+  "position": { "x": 32, "y": 20, "z": 2000, "height": 70, "width": 1856, "tabOrder": 2000 },
+  "visual": {
+    "visualType": "textbox",
+    "objects": {
+      "general": [ { "properties": { "paragraphs": [
+  { "textRuns": [ { "value": "Fighter profile", "textStyle": { "fontSize": "20pt", "color": "#F2F3F5", "fontWeight": "bold" } } ] },
+  { "textRuns": [ { "value": "UFC · all eras · pick a fighter to compare their stats with the division average", "textStyle": { "fontSize": "11pt", "color": "#9AA0A8" } } ] }
+] } } ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}
