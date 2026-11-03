@@ -124,7 +124,7 @@ table fact_round
 							fact_round[date_key],
 							dim_fight[outcome]
 						),
-						// 1 = win, 2 = loss, 3 = draw (numbers: MAXX can't return text)
+						// 1 = win, 2 = loss, 3 = draw (numbers, since MAXX does not return text)
 						"@res",
 							IF (
 								dim_fight[outcome] = "draw",
@@ -147,7 +147,7 @@ table fact_round
 		displayFolder: Fighter page
 
 	measure Latest_Weight_Class =
-			// Weight class of the fighter's latest fight, skipping Catchweight / Open Weight
+			// Weight class of the latest fight of the fighter, skipping Catchweight / Open Weight
 			IF (
 				[F_Selected],
 				VAR t =
@@ -381,7 +381,7 @@ table fact_round
 			)
 		displayFolder: Overall trends
 
-	measure Method_Share_Subtitle = "Green = above, orange = below the average of these weight classes (" & FORMAT ( [Method_Share_Avg], "0%" ) & ")"
+	measure Method_Share_Subtitle = "Green = above, orange = below the UFC average across these weight classes (" & FORMAT ( [Method_Share_Avg], "0%" ) & ")"
 		displayFolder: Overall trends
 
 	column fight_key
