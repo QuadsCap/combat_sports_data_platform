@@ -211,8 +211,8 @@ table fact_round
 		displayFolder: Fighter page
 
 	measure Stat_Fighter = IF ( [F_Selected], [Stat_Core] )
-		formatStringDefinition = SWITCH ( SELECTEDVALUE ( fighter_stat[fmt] ), "pct", "0%", "min", "0.0 ""min""", "0.0" )
 		displayFolder: Fighter page
+		formatStringDefinition = SWITCH ( SELECTEDVALUE ( fighter_stat[fmt] ), "pct", "0%", "min", "0.0 ""min""", "0.0" )
 
 	measure Stat_Division =
 			IF (
@@ -221,8 +221,8 @@ table fact_round
 				RETURN
 					CALCULATE ( [Stat_Core], REMOVEFILTERS ( dim_fighter ), dim_fight[weight_class] = wc )
 			)
-		formatStringDefinition = SWITCH ( SELECTEDVALUE ( fighter_stat[fmt] ), "pct", "0%", "min", "0.0 ""min""", "0.0" )
 		displayFolder: Fighter page
+		formatStringDefinition = SWITCH ( SELECTEDVALUE ( fighter_stat[fmt] ), "pct", "0%", "min", "0.0 ""min""", "0.0" )
 
 	measure Stat_Colour =
 			VAR f = [Stat_Fighter]
