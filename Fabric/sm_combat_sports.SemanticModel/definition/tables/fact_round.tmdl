@@ -124,11 +124,12 @@ table fact_round
 							fact_round[date_key],
 							dim_fight[outcome]
 						),
+						// 1 = win, 2 = loss, 3 = draw (numbers: MAXX can't return text)
 						"@res",
 							IF (
 								dim_fight[outcome] = "draw",
-								"D",
-								IF ( CALCULATE ( MAX ( fact_round[won] ) ) = 1, "W", "L" )
+								3,
+								IF ( CALCULATE ( MAX ( fact_round[won] ) ) = 1, 1, 2 )
 							)
 					)
 				VAR lastDate = MAXX ( t, fact_round[date_key] )
@@ -138,9 +139,9 @@ table fact_round
 				RETURN
 					SWITCH (
 						lastRes,
-						"W", n & IF ( n = 1, " win", " wins" ),
-						"L", n & IF ( n = 1, " loss", " losses" ),
-						"D", n & IF ( n = 1, " draw", " draws" )
+						1, n & IF ( n = 1, " win", " wins" ),
+						2, n & IF ( n = 1, " loss", " losses" ),
+						3, n & IF ( n = 1, " draw", " draws" )
 					)
 			)
 		displayFolder: Fighter page
@@ -156,8 +157,9 @@ table fact_round
 							&& NOT ISBLANK ( RELATED ( dim_fight[weight_class] ) )
 					)
 				VAR lastDate = MAXX ( t, fact_round[date_key] )
+				VAR lastFights = SELECTCOLUMNS ( FILTER ( t, fact_round[date_key] = lastDate ), "fight_key", fact_round[fight_key] )
 				RETURN
-					MAXX ( FILTER ( t, fact_round[date_key] = lastDate ), RELATED ( dim_fight[weight_class] ) )
+					CALCULATE ( SELECTEDVALUE ( dim_fight[weight_class] ), TREATAS ( lastFights, dim_fight[fight_key] ) )
 			)
 		displayFolder: Fighter page
 
@@ -347,7 +349,16 @@ table fact_round
 		formatString: 0%
 		displayFolder: Overall trends
 
-	measure Method_Share_Avg = CALCULATE ( [Method_Share], ALLSELECTED ( dim_fight[weight_class] ) )
+	measure Method_Share_Avg =
+			// Average over the weight classes the chart shows (same exclusions as its visual filter)
+			CALCULATE (
+				[Method_Share],
+				FILTER (
+					ALL ( dim_fight[weight_class] ),
+					NOT ( dim_fight[weight_class] IN { "Women's Featherweight", "Catchweight", "Open Weight" } )
+						&& NOT ISBLANK ( dim_fight[weight_class] )
+				)
+			)
 		formatString: 0%
 		displayFolder: Overall trends
 
