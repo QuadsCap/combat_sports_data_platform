@@ -9,9 +9,9 @@
         "Values": {
           "projections": [
             {
-              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "fact_round" } }, "Property": "Latest_Weight_Class" } },
-              "queryRef": "fact_round.Latest_Weight_Class",
-              "nativeQueryRef": "Latest_Weight_Class"
+              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "fact_round" } }, "Property": "Card_Division" } },
+              "queryRef": "fact_round.Card_Division",
+              "nativeQueryRef": "Card_Division"
             }
           ]
         }

@@ -9,9 +9,9 @@
         "Values": {
           "projections": [
             {
-              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "fact_round" } }, "Property": "F_Streak" } },
-              "queryRef": "fact_round.F_Streak",
-              "nativeQueryRef": "F_Streak"
+              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "fact_round" } }, "Property": "Card_Streak" } },
+              "queryRef": "fact_round.Card_Streak",
+              "nativeQueryRef": "Card_Streak"
             }
           ]
         }

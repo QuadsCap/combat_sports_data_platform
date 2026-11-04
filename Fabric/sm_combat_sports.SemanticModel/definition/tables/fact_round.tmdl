@@ -102,14 +102,26 @@ table fact_round
 			RETURN
 				SWITCH (
 					TRUE (),
-					ISBLANK ( n ), BLANK (),
+					ISBLANK ( n ), "Pick a fighter to see their stats",
 					n < 5, "Small sample · read with caution",
 					n < 10, "Moderate sample",
 					"Solid sample"
 				)
 		displayFolder: Fighter page
 
-	measure F_Sample_Colour = IF ( [F_Fights] < 5, "#EE8F6E", "#9AA0A8" )
+	measure F_Sample_Colour = IF ( [F_Selected] && [F_Fights] < 5, "#EE8F6E", "#9AA0A8" )
+		displayFolder: Fighter page
+
+	measure Card_Fights = IF ( [F_Selected], FORMAT ( [F_Fights], "0" ), "–" )
+		displayFolder: Fighter page
+
+	measure Card_Record = IF ( [F_Selected], [F_Record], "–" )
+		displayFolder: Fighter page
+
+	measure Card_Streak = IF ( [F_Selected], [F_Streak], "–" )
+		displayFolder: Fighter page
+
+	measure Card_Division = IF ( [F_Selected], [Latest_Weight_Class], "–" )
 		displayFolder: Fighter page
 
 	measure F_Streak =

@@ -35,6 +35,7 @@
       }
     },
     "objects": {
+      "items": [ { "properties": { "fontColor": { "solid": { "color": { "expr": { "Literal": { "Value": "'#E6E8EB'" } } } } }, "background": { "solid": { "color": { "expr": { "Literal": { "Value": "'#1E2228'" } } } } } } } ],
       "data": [
         {
           "properties": {

@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.14.0/schema.json",
   "name": "b1f2c3d4e5f6a7b8c902",
-  "position": { "x": 568, "y": 104, "z": 1000, "height": 96, "width": 280, "tabOrder": 1000 },
+  "position": { "x": 568, "y": 104, "z": 1000, "height": 108, "width": 280, "tabOrder": 1000 },
   "visual": {
     "visualType": "card",
     "query": {
@@ -9,16 +9,16 @@
         "Values": {
           "projections": [
             {
-              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "fact_round" } }, "Property": "F_Fights" } },
-              "queryRef": "fact_round.F_Fights",
-              "nativeQueryRef": "F_Fights"
+              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "fact_round" } }, "Property": "Card_Fights" } },
+              "queryRef": "fact_round.Card_Fights",
+              "nativeQueryRef": "Card_Fights"
             }
           ]
         }
       }
     },
     "objects": {
-      "labels": [ { "properties": { "fontSize": { "expr": { "Literal": { "Value": "28D" } } }, "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#F2F3F5'" } } } } } } } ],
+      "labels": [ { "properties": { "fontSize": { "expr": { "Literal": { "Value": "24D" } } }, "color": { "solid": { "color": { "expr": { "Literal": { "Value": "'#F2F3F5'" } } } } } } } ],
       "categoryLabels": [ { "properties": { "show": { "expr": { "Literal": { "Value": "false" } } } } } ]
     },
     "visualContainerObjects": {
