@@ -9,9 +9,9 @@
         "Values": {
           "projections": [
             {
-              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "fact_round" } }, "Property": "F_Compared_With" } },
-              "queryRef": "fact_round.F_Compared_With",
-              "nativeQueryRef": "F_Compared_With"
+              "field": { "Measure": { "Expression": { "SourceRef": { "Entity": "fact_round" } }, "Property": "Latest_Weight_Class" } },
+              "queryRef": "fact_round.Latest_Weight_Class",
+              "nativeQueryRef": "Latest_Weight_Class"
             }
           ]
         }
