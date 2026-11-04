@@ -233,6 +233,10 @@ items added 2026-10-24 above.
 
 **Goal: ratings.**
 
+- [ ] *Carried over from the Phase 2 gate (2026-11-04):* delete the Gmail leftovers (app password on the
+      sender account; Key Vault secrets `alert-from`, `alert-to`, `gmail-app-password` — as `vang13.16`);
+      delete the temporary `VERSION AS OF` cell in `20_clean_cito`; delete scratch items `Test_` /
+      `Bronze_Check` in Fabric if still there; decide "Multi-source going forward" (decisions.md Parked).
 - [ ] Re-run the baseline on the post-switch data; that is the number to beat from here on.
 - [ ] Elo implementation, chronological, no leakage. Decide and document: K-factor, starting
       rating, handling of title fights and long layoffs.
