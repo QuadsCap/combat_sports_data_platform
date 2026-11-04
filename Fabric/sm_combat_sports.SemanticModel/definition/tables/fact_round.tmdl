@@ -132,8 +132,8 @@ table fact_round
 								IF ( CALCULATE ( MAX ( fact_round[won] ) ) = 1, 1, 2 )
 							)
 					)
-				VAR lastDate = MAXX ( t, fact_round[date_key] )
-				VAR lastRes = MAXX ( FILTER ( t, fact_round[date_key] = lastDate ), [@res] )
+				VAR latestFightDate = MAXX ( t, fact_round[date_key] )
+				VAR lastRes = MAXX ( FILTER ( t, fact_round[date_key] = latestFightDate ), [@res] )
 				VAR breakDate = MAXX ( FILTER ( t, [@res] <> lastRes ), fact_round[date_key] )
 				VAR n = COUNTROWS ( FILTER ( t, fact_round[date_key] > breakDate ) )
 				RETURN
@@ -156,8 +156,8 @@ table fact_round
 						NOT ( RELATED ( dim_fight[weight_class] ) IN { "Catchweight", "Open Weight" } )
 							&& NOT ISBLANK ( RELATED ( dim_fight[weight_class] ) )
 					)
-				VAR lastDate = MAXX ( t, fact_round[date_key] )
-				VAR lastFights = SELECTCOLUMNS ( FILTER ( t, fact_round[date_key] = lastDate ), "fight_key", fact_round[fight_key] )
+				VAR latestFightDate = MAXX ( t, fact_round[date_key] )
+				VAR lastFights = SELECTCOLUMNS ( FILTER ( t, fact_round[date_key] = latestFightDate ), "fight_key", fact_round[fight_key] )
 				RETURN
 					CALCULATE ( SELECTEDVALUE ( dim_fight[weight_class] ), TREATAS ( lastFights, dim_fight[fight_key] ) )
 			)
