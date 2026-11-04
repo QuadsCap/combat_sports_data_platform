@@ -130,7 +130,7 @@ the date.**
 
 ---
 
-## Phase 2 — Source switch · gate Wed 4 Nov · **in progress from 19 Oct**
+## Phase 2 — Source switch · gate Wed 4 Nov · **done 2026-11-04**
 
 > **Gate: Wed 4 Nov** (decisions.md 2026-10-24). No buffer after it — 5–8 Nov is not build time.
 
@@ -213,9 +213,9 @@ the date.**
 - [x] **Dashboard redesign** (Mon 2 – Tue 3 Nov morning). **Done 2026-11-04** (commit `85c9b97`, checked in Fabric). Scope frozen 2026-11-02 (decisions.md): the
       discussed redesign + a fighter search page, nothing more; head-to-head parked. Published = the
       recruiter-facing version.
-- [ ] **GitHub packaging** (Tue 3 Nov): README with the Phase 1–2 story, one architecture diagram,
+- [x] **GitHub packaging** (Tue 3 Nov): README with the Phase 1–2 story, one architecture diagram,
       screenshots, repo cleanup.
-- [ ] **Public/private split executed + gate check** (Wed 4 Nov).
+- [x] **Public/private split executed + gate check** (Wed 4 Nov). **Gate check 2026-11-04: all items met** (decisions.md, Emil to confirm); repo visibility switch is Emil's step.
 
 **Cut order for these, in this order** (Claude's proposal 2026-10-28, decided on the day): (1) pipeline run log
 table → Fabric run history; (2) dashboard redesign → current report + readability fixes; (3) diagram →

@@ -169,7 +169,7 @@ The failures are the useful part. Each one is now guarded.
 
 ## Limits and what's open
 
-- **Cito completeness can't be checked once it is the only source.** The missing fight was found only because kagglesk overlapped. Whether to keep a second source running is parked to the Phase 2 gate review (4 Nov).
+- **Cito completeness can't be checked once it is the only source.** The missing fight was found only because kagglesk overlapped. Whether to keep a second source running is parked to the Phase 3 gate (29 Nov; decided 2026-11-04).
 - Cito's name matching is confirmed for these 124 fighters only. New debuts on future Cito loads have no ID to check against.
 - `ranking` after 16 May is null (parked: which source's ranking is as-of the fight).
 - Odds after 16 May are null — planned from the jerzyszocik daily odds dataset in Phase 3.
