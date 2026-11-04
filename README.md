@@ -10,7 +10,7 @@ Cito API (weekly) ┘   raw, as-is  one source-   fact_round +         logistic 
         └──────────── scheduled Fabric pipeline, weekly, push alert on failure ────────────┘
 ```
 
-**Live report:** *(Publish-to-web link — added at publication)*
+**Live report:** [open the Power BI report](https://app.fabric.microsoft.com/view?r=eyJrIjoiM2RmM2NjZDYtMWY3NC00YjUyLTg5NzctNTFlYWUwMTg0MDZhIiwidCI6IjA1ZWIyMWFjLTIwNWYtNDQ5Zi1hYjlkLTE3YjM0YzdhYzc3ZCJ9) (public, no sign-in)
 
 ## Where it stands
 
