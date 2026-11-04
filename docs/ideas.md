@@ -33,6 +33,14 @@ A capture list, not a backlog. Nothing here is in scope until it gets a dated en
     - Leakage: a rating written after watching a fight must only feed predictions for that fighter's *later* fights.
     - Compare against what round stats can already derive (striking/grappling share, finish profile): the hand ratings earn their cost only if they add signal beyond those.
 
+### Dashboard
+
+- Age band vs. age band vs. average (raised 2026-11-03): pick two age bands with slicers and see each one's win chance next to the overall average. Kept out of the frozen redesign. Needs a second, disconnected age-band table (same pattern as the parked head-to-head).
+- Activity by round for the selected fighter (raised 2026-11-04, postponed the same day): sig. strikes landed per minute and takedowns per 15 min in round 1–5, fighter vs division average, as line charts in the empty space under the Fighter matrix. Shows whether output rises or falls over a fight. Data is there (`fact_round` is per round; `Fight_Minutes` gives the round length). Limits to show: rounds 4–5 exist only in five-round fights (small n), and late rounds exist only in fights that were not finished early (selection, not just fatigue).
+  - Extension (raised 2026-11-04): a round-by-round view of all rounds, not only the averages per round number.
+- Win method and loss method for the selected fighter (raised 2026-11-04): today the donut shows wins by method only. Either a second donut for losses, or a switch at the top of the page (Wins / Losses) that drives the same donut.
+- Fight history for the selected fighter (raised 2026-11-03): one row per fight with date, opponent, result, method, round and odds. As a second card on the Fighter page or a drill-through page. Opponent comes via the inactive `opponent_key` relationship. Odds are stored as `f1_*` / `f2_*` in `dim_fight`, so a measure has to pick the side the selected fighter was on.
+
 ### Business
 
 - 

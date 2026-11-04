@@ -210,7 +210,7 @@ the date.**
       public/private split is done. **Dashboard tool decided 2026-11-01** (decisions.md): Power BI + "Publish to
       web", linked from the README. **Split decided 2026-11-02** (decisions.md): baseline public, Phase 3+ model
       private. Still to check: who holds the Fabric admin role (Publish to web needs the tenant setting).
-- [ ] **Dashboard redesign** (Mon 2 – Tue 3 Nov morning). Scope frozen 2026-11-02 (decisions.md): the
+- [x] **Dashboard redesign** (Mon 2 – Tue 3 Nov morning). **Done 2026-11-04** (commit `85c9b97`, checked in Fabric). Scope frozen 2026-11-02 (decisions.md): the
       discussed redesign + a fighter search page, nothing more; head-to-head parked. Published = the
       recruiter-facing version.
 - [ ] **GitHub packaging** (Tue 3 Nov): README with the Phase 1–2 story, one architecture diagram,
