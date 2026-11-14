@@ -3,7 +3,7 @@
 *v1.1 · 2026-09-24 · Owner: Emil*
 
 > Scope lives in `project-definition.md`. This file is only **what gets built which week**.
-> Sprints are calendar weeks aligned to the `Todo.md` Uge numbering (Mon–Sun), so next actions
+> Sprints are calendar weeks aligned to Emil's weekly (Uge) planner (Mon–Sun), so next actions
 > drop straight into the existing weekly blocks. No parallel tracking system.
 
 ---
@@ -16,7 +16,7 @@
 Capacity confirmed 2026-09-20. Phase order and the 29 Nov model gate confirmed 2026-09-24: the
 scrape comes before the model, which moved the model's publish date from 8 Nov to 29 Nov.
 
-Chosen over a nominal 4-5 h/day: the job search, training and drawing run concurrently, and hours
+Chosen over a nominal 4-5 h/day: other commitments run concurrently, and hours
 spent on unfamiliar technology burn roughly double. Sprints below are sized 12-14 h, so each fits
 its week with slack.
 
@@ -234,7 +234,7 @@ items added 2026-10-24 above.
 **Goal: ratings.**
 
 - [ ] *Carried over from the Phase 2 gate (2026-11-04):* delete the Gmail leftovers (app password on the
-      sender account; Key Vault secrets `alert-from`, `alert-to`, `gmail-app-password` — as `vang13.16`);
+      sender account; Key Vault secrets `alert-from`, `alert-to`, `gmail-app-password` — as the owner account);
       delete the temporary `VERSION AS OF` cell in `20_clean_cito`; delete scratch items `Test_` /
       `Bronze_Check` in Fabric if still there; decide "Multi-source going forward" (decisions.md Parked).
 - [ ] Re-run the baseline on the post-switch data; that is the number to beat from here on.
@@ -299,11 +299,11 @@ and that is itself the finding worth writing down.
 
 ## Weekly review — 15 min, Sundays
 
-Folds into the existing Life OS weekly review. Four questions:
+Folds into Emil's existing weekly review. Four questions:
 
 1. Did this sprint's **Done when** actually happen? Yes or no. No partial credit.
 2. If no — what gets cut, from the lists above?
-3. Copy next sprint's tasks into `Todo.md` under the coming Uge.
+3. Copy next sprint's tasks into the weekly planner under the coming Uge.
 4. Anything decided this week → one dated line in `decisions.md`.
 
 ---

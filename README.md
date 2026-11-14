@@ -18,7 +18,7 @@ Cito API (weekly) ┘   raw, as-is  one source-   fact_round +         logistic 
 |---|---|---|
 | **1** | Platform on Kaggle data → Power BI + baseline model | **Built** (17 Oct 2026) |
 | **2** | Live source loaded incrementally into the same silver contract — same gold, same report | **Built** (4 Nov 2026) |
-| 3 | Real model: rating system + logistic regression, scored on calibration, benchmarked against closing odds | Gate Sun 29 Nov |
+| 3 | Real model: rating system + logistic regression, scored on calibration, benchmarked against closing odds | In progress (target 29 Nov 2026) |
 
 ## In numbers
 
@@ -49,6 +49,14 @@ The test of the design: add a live source without changing anything downstream o
 - **Fight trends** — win rate by age band × weight class, and the share of fights ending by KO/TKO, submission or decision per weight class. A method selector drives both; colours show each cell against the UFC average.
 - **Fighter** — search any fighter: record, current streak, sample-size warning, and 12 stats against their division average (pace, accuracy, takedowns, control time, where strikes land), plus wins by method and how their fights ended.
 - **Baseline model** — test metrics vs. naive, calibration plot, and the model's most confident wrong predictions.
+
+*Screenshots (Nov 2026). The [live report](https://app.fabric.microsoft.com/view?r=eyJrIjoiM2RmM2NjZDYtMWY3NC00YjUyLTg5NzctNTFlYWUwMTg0MDZhIiwidCI6IjA1ZWIyMWFjLTIwNWYtNDQ5Zi1hYjlkLTE3YjM0YzdhYzc3ZCJ9) is interactive.*
+
+![Fight trends: win rate by age band and weight class, finish rate by weight class](docs/img/report-fight-trends.jpg)
+
+![Fighter page: record, streak and 12 stats against the division average](docs/img/report-fighter.jpg)
+
+![Baseline model: test metrics, calibration plot, most confident wrong predictions](docs/img/report-baseline.jpg)
 
 ## Design choices worth knowing
 
@@ -82,7 +90,9 @@ The failures are the useful part. Each one is now guarded; details in [`decision
 │   ├── 90_alert_email                           # push alert on pipeline failure (ntfy)
 │   ├── pipeline_cito_refresh.DataPipeline       # weekly schedule
 │   ├── sm_combat_sports.SemanticModel           # Direct Lake model + measures
-│   └── DB_Fight_Stats_by_Weightclass.Report     # the Power BI report
+│   ├── DB_Fight_Stats_by_Weightclass.Report     # the Power BI report
+│   ├── bronze_layer / silver_layer / gold_layer # one lakehouse per layer (definitions only, no data)
+│   └── Test_, pySpark_learning, Bronze_Check    # scratch items from learning Fabric, not part of the pipeline
 └── docs/
     ├── project-definition.md   # scope, phases, gates (source of truth)
     ├── build-plan.md           # what gets built when
@@ -91,6 +101,16 @@ The failures are the useful part. Each one is now guarded; details in [`decision
     ├── decisions.md            # dated decision log
     └── ideas.md                # capture list, not in scope
 ```
+
+## Data sources
+
+All three sources go back to [UFCStats](http://ufcstats.com) data. None is scraped by this project; ufcstats.com's terms forbid automated access, so it isn't scraped directly either.
+
+- **Kaggle, history to 16 May 2026:** [jerzyszocik/ufc-fight-forecast-complete-gold-modeling-dataset](https://www.kaggle.com/datasets/jerzyszocik/ufc-fight-forecast-complete-gold-modeling-dataset).
+- **Kaggle, gap fill 16 May → Oct 2026:** [scarekrow/ufc-data](https://www.kaggle.com/datasets/scarekrow/ufc-data).
+- **Cito API, ongoing:** [citoapi.com](https://citoapi.com), free tier. Cito describes its data as aggregated from public sources and not rights-cleared.
+
+No raw data is stored in this repo. It holds code and item definitions only.
 
 ## Run it
 

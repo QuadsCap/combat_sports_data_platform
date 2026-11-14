@@ -27,14 +27,9 @@ Emil works on two PCs at once. Remind him of these rules at the start of a sessi
 - **During:** notebooks are edited only in Fabric (commit via Fabric Git sync); docs only locally. Never the same file in both places between syncs.
 - **Stop / switch:** commit and `git push` local edits; commit notebooks from Fabric. A local commit is not on GitHub until it's pushed. Check `git status -sb` for "ahead"/"behind" before calling things in sync.
 
-## Azure / Key Vault accounts — remind Emil every time permissions come up
+## Secrets
 
-Before any step that touches permissions, secrets, IAM or role assignments, state this split first (Emil asked, 2026-10-31, after losing time to it):
-
-- **`vang13.16@gmail.com`** — owner account (personal Microsoft account, *guest* in tenant `vang1316gmail.onmicrosoft.com`). **Key Vault Secrets Officer** on `combat-sports-vang-v1`: the only account that can **create/change secrets**. Sign in with "Email a code" if the password is refused; switch directory to `vang1316gmail.onmicrosoft.com` if the vault isn't visible.
-- **`emilfabric@vang1316gmail.onmicrosoft.com`** — working account; Fabric and the pipeline run as it. **Key Vault Secrets User**: **read only**. Can't add secrets or assign roles ("Add role assignment" is disabled). No Exchange mailbox.
-- Secrets Officer covers **Secrets only** — the Keys page shows "not allowed by RBAC" even as the owner; that's expected.
-- Secret **name** (e.g. `alert-ntfy-topic`) goes in code; the **value** never does. 404 = name missing (auth works), 403 = role missing.
+- Secret **names** (e.g. `alert-ntfy-topic`) go in code; **values** never do — they live in Azure Key Vault. Before any permissions/secrets step, Claude states which account can write secrets (details in Claude's local memory, not in this public repo).
 
 ## Boundaries
 
